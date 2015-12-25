@@ -43,6 +43,7 @@ using SDL2;
 
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using Microsoft.Xna.Framework.Input.Touch;
 #endregion
 
 namespace Microsoft.Xna.Framework
@@ -329,6 +330,41 @@ namespace Microsoft.Xna.Framework
 					{
 						// 120 units per notch. Because reasons.
 						Mouse.INTERNAL_MouseWheel += evt.wheel.y * 120;
+					}
+					
+					// Touch Input
+					else if (evt.type == SDL.SDL_EventType.SDL_FINGERDOWN)
+					{
+						TouchPanel.AddEvent(
+							(int) evt.tfinger.touchId,
+							TouchLocationState.Pressed,
+							new Vector2(
+								evt.tfinger.x,
+								evt.tfinger.y
+							)
+						);
+					}
+					else if (evt.type == SDL.SDL_EventType.SDL_FINGERUP)
+					{
+						TouchPanel.AddEvent(
+							(int) evt.tfinger.touchId,
+							TouchLocationState.Released,
+							new Vector2(
+								evt.tfinger.x,
+								evt.tfinger.y
+							)
+						);
+					}
+					else if (evt.type == SDL.SDL_EventType.SDL_FINGERMOTION)
+					{
+						TouchPanel.AddEvent(
+							(int) evt.tfinger.touchId,
+							TouchLocationState.Moved,
+							new Vector2(
+								evt.tfinger.x,
+								evt.tfinger.y
+							)
+						);
 					}
 
 					// Various Window Events...
@@ -631,6 +667,15 @@ namespace Microsoft.Xna.Framework
 
 		internal override bool HasTouch()
 		{
+			/* WARNING: It appears that this always returns 0 until at least one touch event has been received. So this
+			 * result should really be thought of as "HasReceivedATouchEver()" rather than telling you whether a touch-capable
+			 * device exists on this computer or not.
+			 * -BlueLineGames*
+			 */
+			/* For Android devices, this returns true, but unknown if because of the
+			 * behavior mentioned above or because SDL2 returns the correct value.
+			 * -ade
+			 */
 			return SDL.SDL_GetNumTouchDevices() > 0;
 		}
 

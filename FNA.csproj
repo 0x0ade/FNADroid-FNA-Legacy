@@ -294,6 +294,14 @@
     <Compile Include="src\IDrawable.cs" />
     <Compile Include="src\IGameComponent.cs" />
     <Compile Include="src\IGraphicsDeviceManager.cs" />
+	<Compile Include="src\Input\Touch\GestureType.cs" />
+	<Compile Include="src\Input\Touch\TouchCollection.cs" />
+	<Compile Include="src\Input\Touch\TouchLocation.cs" />
+	<Compile Include="src\Input\Touch\TouchLocationState.cs" />
+	<Compile Include="src\Input\Touch\TouchPanelCapabilities.cs" />
+	<Compile Include="src\Input\Touch\TouchPanel.cs" />
+	<Compile Include="src\Input\Touch\GestureSample.cs" />
+	<Compile Include="src\Input\Touch\TouchPanelState.cs" />
     <Compile Include="src\Input\Buttons.cs" />
     <Compile Include="src\Input\ButtonState.cs" />
     <Compile Include="src\Input\GamePadButtons.cs" />
