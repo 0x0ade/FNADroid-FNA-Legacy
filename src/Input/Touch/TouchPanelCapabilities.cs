@@ -55,7 +55,7 @@ namespace Microsoft.Xna.Framework.Input.Touch
 			if (!initialized)
 			{
 				initialized = true;
-				isConnected = Game.Instance.Platform.HasTouch();
+				isConnected = SDL2_FNAPlatform.HasTouch();
 				maximumTouchCount = 8; // FIXME: Monogame hack! How do we get the real number? There doesn't appear to be a method for this in SDL. - SWC
 			}
 		}
