@@ -1,6 +1,6 @@
 #region License
 /* FNA - XNA4 Reimplementation for Desktop Platforms
- * Copyright 2009-2015 Ethan Lee and the MonoGame Team
+ * Copyright 2009-2016 Ethan Lee and the MonoGame Team
  *
  * Released under the Microsoft Public License.
  * See LICENSE for details.
@@ -296,13 +296,6 @@ namespace Microsoft.Xna.Framework.Graphics
 			}
 			if (sizeInBytes == 4)
 			{
-				if (graphicsDevice.GraphicsProfile == GraphicsProfile.Reach)
-				{
-					throw new NotSupportedException(
-						"The profile does not support an elementSize of IndexElementSize.ThirtyTwoBits; " +
-						"use IndexElementSize.SixteenBits or a type that has a size of two bytes."
-					);
-				}
 				return IndexElementSize.ThirtyTwoBits;
 			}
 

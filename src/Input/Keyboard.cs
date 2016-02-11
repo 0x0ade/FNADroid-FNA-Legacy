@@ -1,6 +1,6 @@
 #region License
 /* FNA - XNA4 Reimplementation for Desktop Platforms
- * Copyright 2009-2015 Ethan Lee and the MonoGame Team
+ * Copyright 2009-2016 Ethan Lee and the MonoGame Team
  *
  * Released under the Microsoft Public License.
  * See LICENSE for details.
@@ -53,7 +53,7 @@ namespace Microsoft.Xna.Framework.Input
 
 		public static Keys GetKeyFromScancodeEXT(Keys scancode)
 		{
-			return Game.Instance.Platform.GetKeyFromScancode(scancode);
+			return FNAPlatform.GetKeyFromScancode(scancode);
 		}
 
 		#endregion

@@ -1,6 +1,6 @@
 #region License
 /* FNA - XNA4 Reimplementation for Desktop Platforms
- * Copyright 2009-2015 Ethan Lee and the MonoGame Team
+ * Copyright 2009-2016 Ethan Lee and the MonoGame Team
  *
  * Released under the Microsoft Public License.
  * See LICENSE for details.
@@ -103,27 +103,14 @@ namespace Microsoft.Xna.Framework
 			}
 		}
 
-		private bool INTERNAL_isBorderless = false;
 		public override bool IsBorderlessEXT
 		{
 			get
 			{
-				return (	INTERNAL_isBorderless ||
-						(SDL.SDL_GetWindowFlags(INTERNAL_sdlWindow) & (uint) SDL.SDL_WindowFlags.SDL_WINDOW_BORDERLESS) != 0	);
+				return ((SDL.SDL_GetWindowFlags(INTERNAL_sdlWindow) & (uint) SDL.SDL_WindowFlags.SDL_WINDOW_BORDERLESS) != 0);
 			}
 			set
 			{
-				INTERNAL_isBorderless = value;
-				if ((SDL.SDL_GetWindowFlags(INTERNAL_sdlWindow) & (uint) SDL.SDL_WindowFlags.SDL_WINDOW_SHOWN) == 0)
-				{
-					/* FIXME: SDL2/X11 bug!
-					 * If you set the window border before the window's actually
-					 * shown, this next call will hang. So schedule it for
-					 * later.
-					 * -flibit
-					 */
-					return;
-				}
 				SDL.SDL_SetWindowBordered(
 					INTERNAL_sdlWindow,
 					value ? SDL.SDL_bool.SDL_FALSE : SDL.SDL_bool.SDL_TRUE
@@ -149,8 +136,6 @@ namespace Microsoft.Xna.Framework
 		private bool INTERNAL_wantsFullscreen;
 
 		private string INTERNAL_deviceName;
-
-		private Point INTERNAL_lastWindowPosition;
 
 		#endregion
 
@@ -234,9 +219,11 @@ namespace Microsoft.Xna.Framework
 			);
 			INTERNAL_SetIcon(title);
 
+			INTERNAL_deviceName = SDL.SDL_GetDisplayName(
+				SDL.SDL_GetWindowDisplayIndex(INTERNAL_sdlWindow)
+			);
 			INTERNAL_isFullscreen = false;
 			INTERNAL_wantsFullscreen = false;
-			INTERNAL_lastWindowPosition = new Point(SDL.SDL_WINDOWPOS_CENTERED, SDL.SDL_WINDOWPOS_CENTERED);
 		}
 
 		#endregion
@@ -253,57 +240,60 @@ namespace Microsoft.Xna.Framework
 			int clientWidth,
 			int clientHeight
 		) {
-			// Set screen device name, not that we use it...
-			INTERNAL_deviceName = screenDeviceName;
-
 			// Fullscreen
-			SDL.SDL_SetWindowFullscreen(
-				INTERNAL_sdlWindow,
-				INTERNAL_wantsFullscreen ?
-					(uint) SDL.SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP :
-					0
-			);
+			if (	INTERNAL_wantsFullscreen &&
+				(SDL.SDL_GetWindowFlags(INTERNAL_sdlWindow) & (uint) SDL.SDL_WindowFlags.SDL_WINDOW_SHOWN) == 0	)
+			{
+				/* FIXME: SDL2/OSX bug!
+				 * For whatever reason, Spaces windows on OSX
+				 * like to be high-DPI if you set fullscreen
+				 * while the window is hidden. But, if you just
+				 * show the window first, everything is fine.
+				 * -flibit
+				 */
+				SDL.SDL_ShowWindow(INTERNAL_sdlWindow);
+			}
 
-			/* Because Mac windows resize from the bottom, we have to get the
-			 * position before changing the size so we can keep the window
-			 * centered when resizing in windowed mode.
-			 * -Nick
-			 */
-			Rectangle prevBounds = Rectangle.Empty;
+			// When windowed, set the size before moving
 			if (!INTERNAL_wantsFullscreen)
 			{
-				prevBounds = ClientBounds;
+				SDL.SDL_SetWindowFullscreen(INTERNAL_sdlWindow, 0);
+				SDL.SDL_SetWindowSize(INTERNAL_sdlWindow, clientWidth, clientHeight);
 			}
 
-			// Window bounds
-			SDL.SDL_SetWindowSize(INTERNAL_sdlWindow, clientWidth, clientHeight);
-
-			// Window position
-			if (INTERNAL_isFullscreen && !INTERNAL_wantsFullscreen)
+			// Get on the right display!
+			int displayIndex = 0;
+			for (int i = 0; i < GraphicsAdapter.Adapters.Count; i += 1)
 			{
-				// If exiting fullscreen, just center the window on the desktop.
-				SDL.SDL_SetWindowPosition(
-					INTERNAL_sdlWindow,
-					INTERNAL_lastWindowPosition.X,
-					INTERNAL_lastWindowPosition.Y
-				);
+				// FIXME: Should be checking Name, not Description! -flibit
+				if (screenDeviceName == GraphicsAdapter.Adapters[i].Description)
+				{
+					displayIndex = i;
+					break;
+				}
 			}
-			else if (!INTERNAL_wantsFullscreen)
-			{
-				// Store the window position before switching to fullscreen
-				INTERNAL_lastWindowPosition.X = prevBounds.X + ((prevBounds.Width - clientWidth) / 2);
-				INTERNAL_lastWindowPosition.Y = prevBounds.Y + ((prevBounds.Height - clientHeight) / 2);
 
-				SDL.SDL_SetWindowPosition(
+			// Just to be sure, become a window first before changing displays
+			if (INTERNAL_deviceName != screenDeviceName)
+			{
+				SDL.SDL_SetWindowFullscreen(INTERNAL_sdlWindow, 0);
+				INTERNAL_deviceName = screenDeviceName;
+			}
+
+			// Window always gets centered, per XNA behavior
+			int pos = SDL.SDL_WINDOWPOS_CENTERED_DISPLAY(displayIndex);
+			SDL.SDL_SetWindowPosition(
+				INTERNAL_sdlWindow,
+				pos,
+				pos
+			);
+
+			// Set fullscreen after we've done all the ugly stuff.
+			if (INTERNAL_wantsFullscreen)
+			{
+				SDL.SDL_SetWindowFullscreen(
 					INTERNAL_sdlWindow,
-					Math.Max(
-						INTERNAL_lastWindowPosition.X,
-						0
-					),
-					Math.Max(
-						INTERNAL_lastWindowPosition.Y,
-						0
-					)
+					(uint) SDL.SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP
 				);
 			}
 

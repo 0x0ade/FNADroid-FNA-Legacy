@@ -1,6 +1,6 @@
 #region License
 /* FNA - XNA4 Reimplementation for Desktop Platforms
- * Copyright 2009-2015 Ethan Lee and the MonoGame Team
+ * Copyright 2009-2016 Ethan Lee and the MonoGame Team
  *
  * Released under the Microsoft Public License.
  * See LICENSE for details.
@@ -82,6 +82,19 @@ namespace Microsoft.Xna.Framework.Audio
 		{
 			get;
 			private set;
+		}
+
+		#endregion
+
+		#region Internal Properties
+
+		internal bool JustStarted
+		{
+			get
+			{
+				// Arbitrarily 1/12 of a second, with some wiggle room -flibit
+				return INTERNAL_timer.ElapsedMilliseconds < 80;
+			}
 		}
 
 		#endregion
@@ -293,7 +306,7 @@ namespace Microsoft.Xna.Framework.Audio
 					return curVar.GetValue();
 				}
 			}
-			throw new Exception("Instance variable not found!");
+			throw new ArgumentException("Instance variable not found!");
 		}
 
 		public void Pause()
@@ -325,20 +338,29 @@ namespace Microsoft.Xna.Framework.Audio
 				}
 				else if (INTERNAL_data.MaxCueBehavior == MaxInstanceBehavior.Queue)
 				{
-					throw new Exception("Cue Queueing not handled!");
+					throw new NotImplementedException("Cue Queueing not handled!");
 				}
 				else if (INTERNAL_data.MaxCueBehavior == MaxInstanceBehavior.ReplaceOldest)
 				{
-					INTERNAL_category.INTERNAL_removeOldestCue(Name);
+					if (!INTERNAL_category.INTERNAL_removeOldestCue(Name))
+					{
+						return; // Just ignore us...
+					}
 				}
 				else if (INTERNAL_data.MaxCueBehavior == MaxInstanceBehavior.ReplaceQuietest)
 				{
-					INTERNAL_category.INTERNAL_removeQuietestCue(Name);
+					if (!INTERNAL_category.INTERNAL_removeQuietestCue(Name))
+					{
+						return; // Just ignore us...
+					}
 				}
 				else if (INTERNAL_data.MaxCueBehavior == MaxInstanceBehavior.ReplaceLowestPriority)
 				{
 					// FIXME: Priority?
-					INTERNAL_category.INTERNAL_removeOldestCue(Name);
+					if (!INTERNAL_category.INTERNAL_removeOldestCue(Name))
+					{
+						return; // Just ignore us...
+					}
 				}
 			}
 
@@ -392,7 +414,7 @@ namespace Microsoft.Xna.Framework.Audio
 					return;
 				}
 			}
-			throw new Exception("Instance variable not found!");
+			throw new ArgumentException("Instance variable not found!");
 		}
 
 		public void Stop(AudioStopOptions options)
@@ -461,7 +483,7 @@ namespace Microsoft.Xna.Framework.Audio
 					}
 					else
 					{
-						throw new Exception("Unhandled XACTEvent type!");
+						throw new NotImplementedException("Unhandled XACTEvent type!");
 					}
 					INTERNAL_eventPlayed[i] = true;
 				}
@@ -677,7 +699,7 @@ namespace Microsoft.Xna.Framework.Audio
 					}
 					else
 					{
-						throw new Exception("RPC Parameter Type: " + curRPC.Parameter.ToString());
+						throw new NotImplementedException("RPC Parameter Type: " + curRPC.Parameter.ToString());
 					}
 				}
 			}

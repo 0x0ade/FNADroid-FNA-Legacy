@@ -1,6 +1,6 @@
 #region License
 /* FNA - XNA4 Reimplementation for Desktop Platforms
- * Copyright 2009-2015 Ethan Lee and the MonoGame Team
+ * Copyright 2009-2016 Ethan Lee and the MonoGame Team
  *
  * Released under the Microsoft Public License.
  * See LICENSE for details.
@@ -117,11 +117,11 @@ namespace Microsoft.Xna.Framework.Media
 			 */
 			if (width != Width || height != Height)
 			{
-				throw new Exception("XNB/OGV width/height mismatch!");
+				throw new InvalidOperationException("XNB/OGV width/height mismatch!");
 			}
 			if (Math.Abs(FramesPerSecond - framesPerSecond) >= 1.0f)
 			{
-				throw new Exception("XNB/OGV framesPerSecond mismatch!");
+				throw new InvalidOperationException("XNB/OGV framesPerSecond mismatch!");
 			}
 
 			// FIXME: Oh, hey! I wish we had this info in TheoraPlay!

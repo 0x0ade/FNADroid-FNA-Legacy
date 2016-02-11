@@ -1,6 +1,6 @@
 #region License
 /* FNA - XNA4 Reimplementation for Desktop Platforms
- * Copyright 2009-2015 Ethan Lee and the MonoGame Team
+ * Copyright 2009-2016 Ethan Lee and the MonoGame Team
  *
  * Released under the Microsoft Public License.
  * See LICENSE for details.
@@ -25,6 +25,20 @@ namespace Microsoft.Xna.Framework.Input
 		/// http://msdn.microsoft.com/en-AU/library/system.windows.forms.control.keypress.aspx
 		/// </summary>
 		public static event Action<char> TextInput;
+
+		#endregion
+
+		#region Public Static Methods
+
+		public static void StartTextInput()
+		{
+			FNAPlatform.StartTextInput();
+		}
+
+		public static void StopTextInput()
+		{
+			FNAPlatform.StopTextInput();
+		}
 
 		#endregion
 

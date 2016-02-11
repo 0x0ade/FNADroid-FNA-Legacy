@@ -1,6 +1,6 @@
 #region License
 /* FNA - XNA4 Reimplementation for Desktop Platforms
- * Copyright 2009-2015 Ethan Lee and the MonoGame Team
+ * Copyright 2009-2016 Ethan Lee and the MonoGame Team
  *
  * Released under the Microsoft Public License.
  * See LICENSE for details.
@@ -10,6 +10,7 @@
 #region Using Statements
 using System;
 using System.IO;
+using System.Threading;
 using System.Runtime.Remoting.Messaging;
 #endregion
 
@@ -55,27 +56,7 @@ namespace Microsoft.Xna.Framework.Storage
 		{
 			get
 			{
-				if (	Game.Instance.Platform.OSVersion.Equals("Linux") ||
-					Game.Instance.Platform.OSVersion.Equals("Mac OS X")	)
-				{
-					/* Linux and Mac use locally connected storage in the user's
-					 * home location, which should always be "connected".
-					 */
-					return true;
-				}
-				else if (Game.Instance.Platform.OSVersion.Equals("Windows"))
-				{
-					try
-					{
-						return new DriveInfo(storageRoot).IsReady;
-					}
-					catch
-					{
-						// The storageRoot path is invalid / has been removed.
-						return false;
-					}
-				}
-				throw new Exception("StorageDevice: Platform.OSVersion not handled!");
+				return FNAPlatform.IsStoragePathConnected(storageRoot);
 			}
 		}
 
@@ -107,13 +88,11 @@ namespace Microsoft.Xna.Framework.Storage
 
 		private PlayerIndex? devicePlayer;
 
-		private StorageContainer deviceContainer;
-
 		#endregion
 
 		#region Private Static Variables
 
-		private static readonly string storageRoot = GetStorageRoot();
+		private static readonly string storageRoot = FNAPlatform.GetStorageRoot();
 
 		#endregion
 
@@ -134,27 +113,70 @@ namespace Microsoft.Xna.Framework.Storage
 
 		#endregion
 
-		#region Private Delegates
+		#region Private XNA Lies
 
-		private delegate StorageDevice ShowSelectorAsynchronous(
-			PlayerIndex? player,
-			int sizeInBytes,
-			int directoryCount
-		);
+		private class NotAsyncLie : IAsyncResult
+		{
+			public object AsyncState
+			{
+				get;
+				private set;
+			}
 
-		private delegate StorageContainer OpenContainerAsynchronous(string displayName);
+			public bool CompletedSynchronously
+			{
+				get
+				{
+					return true;
+				}
+			}
+
+			public bool IsCompleted
+			{
+				get
+				{
+					return true;
+				}
+			}
+
+			public WaitHandle AsyncWaitHandle
+			{
+				get;
+				private set;
+			}
+
+			public NotAsyncLie(object state)
+			{
+				AsyncState = state;
+				AsyncWaitHandle = new ManualResetEvent(true);
+			}
+		}
+
+		private class ShowSelectorLie : NotAsyncLie
+		{
+			public readonly PlayerIndex? PlayerIndex;
+
+			public ShowSelectorLie(object state, PlayerIndex? playerIndex) : base(state)
+			{
+				PlayerIndex = playerIndex;
+			}
+		}
+
+		private class OpenContainerLie : NotAsyncLie
+		{
+			public readonly string DisplayName;
+
+			public OpenContainerLie(object state, string displayName) : base(state)
+			{
+				DisplayName = displayName;
+			}
+		}
 
 		#endregion
 
 		#region Internal Constructors
 
-		/// <summary>
-		/// Creates a new <see cref="StorageDevice"/> instance.
-		/// </summary>
-		/// <param name="player">The playerIndex of the player.</param>
-		/// <param name="sizeInBytes">Size of the storage device.</param>
-		/// <param name="directoryCount"></param>
-		internal StorageDevice(PlayerIndex? player, int sizeInBytes, int directoryCount)
+		internal StorageDevice(PlayerIndex? player)
 		{
 			devicePlayer = player;
 		}
@@ -175,15 +197,12 @@ namespace Microsoft.Xna.Framework.Storage
 			AsyncCallback callback,
 			object state
 		) {
-			try
+			IAsyncResult result = new OpenContainerLie(state, displayName);
+			if (callback != null)
 			{
-				OpenContainerAsynchronous AsynchronousOpen = new OpenContainerAsynchronous(Open);
-				return AsynchronousOpen.BeginInvoke(displayName, callback, state);
+				callback(result);
 			}
-			finally
-			{
-				// TODO:  No resources to clean up?  Remove this finally block?
-			}
+			return result;
 		}
 
 		/// <summary>
@@ -193,33 +212,12 @@ namespace Microsoft.Xna.Framework.Storage
 		/// <param name="result">Result of BeginOpenContainer.</param>
 		public StorageContainer EndOpenContainer(IAsyncResult result)
 		{
-			StorageContainer returnValue = null;
-			try
-			{
-				// Retrieve the delegate.
-				AsyncResult asyncResult = result as AsyncResult;
-				if (asyncResult != null)
-				{
-					OpenContainerAsynchronous asyncDelegate = asyncResult.AsyncDelegate
-						as OpenContainerAsynchronous;
-
-					// Wait for the WaitHandle to become signaled.
-					result.AsyncWaitHandle.WaitOne();
-
-					// Call EndInvoke to retrieve the results.
-					if (asyncDelegate != null)
-					{
-						returnValue = asyncDelegate.EndInvoke(result);
-					}
-				}
-			}
-			finally
-			{
-				// Close the wait handle.
-				result.AsyncWaitHandle.Dispose();
-			}
-
-			return returnValue;
+			return new StorageContainer(
+				this,
+				(result as OpenContainerLie).DisplayName,
+				storageRoot,
+				devicePlayer
+			);
 		}
 
 		#endregion
@@ -279,8 +277,12 @@ namespace Microsoft.Xna.Framework.Storage
 			AsyncCallback callback,
 			object state
 		) {
-			ShowSelectorAsynchronous del = new ShowSelectorAsynchronous(Show);
-			return del.BeginInvoke(null, sizeInBytes, directoryCount, callback, state);
+			IAsyncResult result = new ShowSelectorLie(state, null);
+			if (callback != null)
+			{
+				callback(result);
+			}
+			return result;
 		}
 
 		/// <summary>
@@ -299,8 +301,12 @@ namespace Microsoft.Xna.Framework.Storage
 			AsyncCallback callback,
 			object state
 		) {
-			ShowSelectorAsynchronous del = new ShowSelectorAsynchronous(Show);
-			return del.BeginInvoke(player, sizeInBytes, directoryCount, callback, state);
+			IAsyncResult result = new ShowSelectorLie(state, player);
+			if (callback != null)
+			{
+				callback(result);
+			}
+			return result;
 		}
 
 		/// <summary>
@@ -310,29 +316,7 @@ namespace Microsoft.Xna.Framework.Storage
 		/// <param name="result">The result of BeginShowSelector.</param>
 		public static StorageDevice EndShowSelector(IAsyncResult result)
 		{
-			if (!result.IsCompleted)
-			{
-				// Wait for the WaitHandle to become signaled.
-				try
-				{
-					result.AsyncWaitHandle.WaitOne();
-				}
-				finally
-				{
-				}
-			}
-
-			// Retrieve the delegate.
-			AsyncResult asyncResult = (AsyncResult) result;
-
-			ShowSelectorAsynchronous del = asyncResult.AsyncDelegate as ShowSelectorAsynchronous;
-
-			if (del != null)
-			{
-				return del.EndInvoke(result);
-			}
-
-			throw new ArgumentException("result");
+			return new StorageDevice((result as ShowSelectorLie).PlayerIndex);
 		}
 
 		#endregion
@@ -342,73 +326,6 @@ namespace Microsoft.Xna.Framework.Storage
 		public void DeleteContainer(string titleName)
 		{
 			throw new NotImplementedException();
-		}
-
-		#endregion
-
-		#region Private OpenContainer Async Method
-
-		// Private method to handle the creation of the StorageDevice.
-		private StorageContainer Open(string displayName)
-		{
-			deviceContainer = new StorageContainer(
-				this,
-				displayName,
-				storageRoot,
-				devicePlayer
-			);
-			return deviceContainer;
-		}
-
-		#endregion
-
-		#region Private ShowSelector Async Method
-
-		// Private method to handle the creation of the StorageDevice.
-		private static StorageDevice Show(PlayerIndex? player, int sizeInBytes, int directoryCount)
-		{
-			return new StorageDevice(player, sizeInBytes, directoryCount);
-		}
-
-		#endregion
-
-		#region Private Static OS User Directory Path Method
-
-		private static string GetStorageRoot()
-		{
-			if (Game.Instance.Platform.OSVersion.Equals("Windows"))
-			{
-				return Path.Combine(
-					Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-					"SavedGames"
-				);
-			}
-			if (Game.Instance.Platform.OSVersion.Equals("Mac OS X"))
-			{
-				string osConfigDir = Environment.GetEnvironmentVariable("HOME");
-				if (String.IsNullOrEmpty(osConfigDir))
-				{
-					return "."; // Oh well.
-				}
-				osConfigDir += "/Library/Application Support";
-				return osConfigDir;
-			}
-			if (Game.Instance.Platform.OSVersion.Equals("Linux"))
-			{
-				// Assuming a non-OSX Unix platform will follow the XDG. Which it should.
-				string osConfigDir = Environment.GetEnvironmentVariable("XDG_DATA_HOME");
-				if (String.IsNullOrEmpty(osConfigDir))
-				{
-					osConfigDir = Environment.GetEnvironmentVariable("HOME");
-					if (String.IsNullOrEmpty(osConfigDir))
-					{
-						return ".";	// Oh well.
-					}
-					osConfigDir += "/.local/share";
-				}
-				return osConfigDir;
-			}
-			throw new Exception("StorageDevice: Platform.OSVersion not handled!");
 		}
 
 		#endregion

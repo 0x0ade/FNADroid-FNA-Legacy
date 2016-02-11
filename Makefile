@@ -123,12 +123,12 @@ SRC = \
 	src/Design/Vector4Converter.cs \
 	src/DisplayOrientation.cs \
 	src/DrawableGameComponent.cs \
+	src/FNAPlatform.cs \
 	src/FrameworkDispatcher.cs \
 	src/Game.cs \
 	src/GameComponent.cs \
 	src/GameComponentCollection.cs \
 	src/GameComponentCollectionEventArgs.cs \
-	src/GamePlatform.cs \
 	src/GameServiceContainer.cs \
 	src/GameTime.cs \
 	src/GameWindow.cs \
@@ -262,6 +262,7 @@ SRC = \
 	src/IGraphicsDeviceManager.cs \
 	src/Input/Buttons.cs \
 	src/Input/ButtonState.cs \
+	src/Input/GamePad.cs \
 	src/Input/GamePadButtons.cs \
 	src/Input/GamePadCapabilities.cs \
 	src/Input/GamePadDeadZone.cs \
@@ -274,6 +275,7 @@ SRC = \
 	src/Input/KeyboardState.cs \
 	src/Input/Keys.cs \
 	src/Input/KeyState.cs \
+	src/Input/Mouse.cs \
 	src/Input/MouseState.cs \
 	src/Input/TextInputEXT.cs \
 	src/IUpdateable.cs \
@@ -299,11 +301,9 @@ SRC = \
 	src/Quaternion.cs \
 	src/Ray.cs \
 	src/Rectangle.cs \
-	src/SDL2/Input/SDL2_GamePad.cs \
-	src/SDL2/Input/SDL2_KeyboardUtil.cs \
-	src/SDL2/Input/SDL2_Mouse.cs \
-	src/SDL2/SDL2_GamePlatform.cs \
+	src/SDL2/SDL2_FNAPlatform.cs \
 	src/SDL2/SDL2_GameWindow.cs \
+	src/SDL2/SDL2_KeyboardUtil.cs \
 	src/Storage/StorageContainer.cs \
 	src/Storage/StorageDevice.cs \
 	src/Storage/StorageDeviceNotConnectedException.cs \
@@ -326,12 +326,23 @@ SRC = \
 	lib/Vorbisfile-CS/Vorbisfile.cs \
 	lib/TheoraPlay-CS/TheoraPlay.cs
 
+RESDIR = src/Graphics/Effect/StockEffects/FXB
+RESNAME = Microsoft.Xna.Framework.Graphics.Effect.Resources
+RES = \
+	-resource:$(RESDIR)/AlphaTestEffect.fxb,$(RESNAME).AlphaTestEffect.fxb \
+	-resource:$(RESDIR)/BasicEffect.fxb,$(RESNAME).BasicEffect.fxb \
+	-resource:$(RESDIR)/DualTextureEffect.fxb,$(RESNAME).DualTextureEffect.fxb \
+	-resource:$(RESDIR)/EnvironmentMapEffect.fxb,$(RESNAME).EnvironmentMapEffect.fxb \
+	-resource:$(RESDIR)/SkinnedEffect.fxb,$(RESNAME).SkinnedEffect.fxb \
+	-resource:$(RESDIR)/SpriteEffect.fxb,$(RESNAME).SpriteEffect.fxb \
+	-resource:src/Graphics/Effect/YUVToRGBA/YUVToRGBAEffect.fxb,$(RESNAME).YUVToRGBAEffect.fxb
+
 # Targets
 
 debug: clean-debug
 	mkdir -p bin/Debug
 	cp FNA.dll.config bin/Debug
-	dmcs /unsafe -debug -out:bin/Debug/FNA.dll -target:library $(SRC)
+	dmcs /unsafe -debug -define:DEBUG -out:bin/Debug/FNA.dll -target:library $(SRC) $(RES)
 
 clean-debug:
 	rm -rf bin/Debug
@@ -339,7 +350,7 @@ clean-debug:
 release: clean-release
 	mkdir -p bin/Release
 	cp FNA.dll.config bin/Release
-	dmcs /unsafe -optimize -out:bin/Release/FNA.dll -target:library $(SRC)
+	dmcs /unsafe -optimize -out:bin/Release/FNA.dll -target:library $(SRC) $(RES)
 
 clean-release:
 	rm -rf bin/Release

@@ -1,6 +1,6 @@
 #region License
 /* FNA - XNA4 Reimplementation for Desktop Platforms
- * Copyright 2009-2015 Ethan Lee and the MonoGame Team
+ * Copyright 2009-2016 Ethan Lee and the MonoGame Team
  *
  * Released under the Microsoft Public License.
  * See LICENSE for details.
@@ -58,7 +58,7 @@ namespace Microsoft.Xna.Framework.Audio
 			// We should only have one of these!
 			if (ALDevice != null)
 			{
-				System.Console.WriteLine("ALDevice already exists, overwriting!");
+				FNAPlatform.Log("ALDevice already exists, overwriting!");
 			}
 
 			bool disableSound = Environment.GetEnvironmentVariable(
@@ -71,21 +71,7 @@ namespace Microsoft.Xna.Framework.Audio
 			}
 			else
 			{
-				try
-				{
-					ALDevice = new OpenALDevice();
-				}
-				catch(DllNotFoundException e)
-				{
-					System.Console.WriteLine("OpenAL not found! Need FNA.dll.config?");
-					throw e;
-				}
-				catch(Exception)
-				{
-					/* We ignore and device creation exceptions,
-					 * as they are handled down the line with Instance != null
-					 */
-				}
+				ALDevice = FNAPlatform.CreateALDevice();
 			}
 
 			// Populate device list

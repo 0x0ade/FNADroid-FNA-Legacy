@@ -1,6 +1,6 @@
 #region License
 /* FNA - XNA4 Reimplementation for Desktop Platforms
- * Copyright 2009-2015 Ethan Lee and the MonoGame Team
+ * Copyright 2009-2016 Ethan Lee and the MonoGame Team
  *
  * Released under the Microsoft Public License.
  * See LICENSE for details.
@@ -17,6 +17,12 @@ namespace Microsoft.Xna.Framework.Input
 {
 	internal static class SDL2_KeyboardUtil
 	{
+		#region Public Static Key Map Override
+
+		public static bool UseScancodes = false;
+
+		#endregion
+
 		#region Private SDL2->XNA Key Hashmaps
 
 		/* From: http://blogs.msdn.com/b/shawnhar/archive/2007/07/02/twin-paths-to-garbage-collector-nirvana.aspx
@@ -409,35 +415,32 @@ namespace Microsoft.Xna.Framework.Input
 
 		#region Public SDL2<->XNA Key Conversion Methods
 
-		public static Keys ToXNA(SDL.SDL_Keycode key)
+		public static Keys ToXNA(ref SDL.SDL_Keysym key)
 		{
 			Keys retVal;
-			if (INTERNAL_keyMap.TryGetValue((int) key, out retVal))
+			if (UseScancodes)
 			{
-				return retVal;
+				if (INTERNAL_scanMap.TryGetValue((int) key.scancode, out retVal))
+				{
+					return retVal;
+				}
 			}
 			else
 			{
-				System.Console.WriteLine("KEY MISSING FROM SDL2->XNA DICTIONARY: " + key.ToString());
-				return Keys.None;
+				if (INTERNAL_keyMap.TryGetValue((int) key.sym, out retVal))
+				{
+					return retVal;
+				}
 			}
+			FNAPlatform.Log(
+				"KEY/SCANCODE MISSING FROM SDL2->XNA DICTIONARY: " +
+				key.sym.ToString() + " " +
+				key.scancode.ToString()
+			);
+			return Keys.None;
 		}
 
-		public static Keys ToXNA(SDL.SDL_Scancode key)
-		{
-			Keys retVal;
-			if (INTERNAL_scanMap.TryGetValue((int) key, out retVal))
-			{
-				return retVal;
-			}
-			else
-			{
-				System.Console.WriteLine("SCANCODE MISSING FROM SDL2->XNA DICTIONARY: " + key.ToString());
-				return Keys.None;
-			}
-		}
-
-		public static Keys KeyFromScancode(Keys scancode)
+		public static Keys GetKeyFromScancode(Keys scancode)
 		{
 			SDL.SDL_Scancode retVal;
 			if (INTERNAL_xnaMap.TryGetValue((int) scancode, out retVal))
@@ -446,7 +449,7 @@ namespace Microsoft.Xna.Framework.Input
 			}
 			else
 			{
-				System.Console.WriteLine("SCANCODE MISSING FROM XNA->SDL2 DICTIONARY: " + scancode.ToString());
+				FNAPlatform.Log("SCANCODE MISSING FROM XNA->SDL2 DICTIONARY: " + scancode.ToString());
 				return Keys.None;
 			}
 		}

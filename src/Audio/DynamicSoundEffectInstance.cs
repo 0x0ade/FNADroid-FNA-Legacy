@@ -1,6 +1,6 @@
 #region License
 /* FNA - XNA4 Reimplementation for Desktop Platforms
- * Copyright 2009-2015 Ethan Lee and the MonoGame Team
+ * Copyright 2009-2016 Ethan Lee and the MonoGame Team
  *
  * Released under the Microsoft Public License.
  * See LICENSE for details.
@@ -163,7 +163,8 @@ namespace Microsoft.Xna.Framework.Audio
 			AudioDevice.ALDevice.SetBufferData(
 				newBuf,
 				channels,
-				buffer, // TODO: offset -flibit
+				buffer,
+				offset,
 				count,
 				sampleRate
 			);
@@ -226,7 +227,7 @@ namespace Microsoft.Xna.Framework.Audio
 			INTERNAL_alSource = AudioDevice.ALDevice.GenSource();
 			if (INTERNAL_alSource == null)
 			{
-				System.Console.WriteLine("WARNING: AL SOURCE WAS NOT AVAILABLE. SKIPPING.");
+				FNAPlatform.Log("WARNING: AL SOURCE WAS NOT AVAILABLE. SKIPPING.");
 				return;
 			}
 
@@ -344,8 +345,12 @@ namespace Microsoft.Xna.Framework.Audio
 
 		#region Public FNA Extension Methods
 
-		/* THIS IS AN EXTENSION OF THE XNA4 API! */
 		public void SubmitFloatBufferEXT(float[] buffer)
+		{
+			SubmitFloatBufferEXT(buffer, 0, buffer.Length);
+		}
+
+		public void SubmitFloatBufferEXT(float[] buffer, int offset, int count)
 		{
 			/* Float samples are the typical format received from decoders.
 			 * We currently use this for the VideoPlayer.
@@ -364,6 +369,8 @@ namespace Microsoft.Xna.Framework.Audio
 				newBuf,
 				channels,
 				buffer,
+				offset,
+				count,
 				sampleRate
 			);
 

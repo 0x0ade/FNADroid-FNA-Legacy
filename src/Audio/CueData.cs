@@ -1,6 +1,6 @@
 #region License
 /* FNA - XNA4 Reimplementation for Desktop Platforms
- * Copyright 2009-2015 Ethan Lee and the MonoGame Team
+ * Copyright 2009-2016 Ethan Lee and the MonoGame Team
  *
  * Released under the Microsoft Public License.
  * See LICENSE for details.
@@ -718,7 +718,7 @@ namespace Microsoft.Xna.Framework.Audio
 					 * Type 9 - Marker Event
 					 * -flibit
 					 */
-					throw new Exception(
+					throw new NotImplementedException(
 						"EVENT TYPE " + eventType.ToString() + " NOT IMPLEMENTED!"
 					);
 				}
@@ -931,7 +931,7 @@ namespace Microsoft.Xna.Framework.Audio
 			}
 			else
 			{
-				throw new Exception(
+				throw new NotImplementedException(
 					"Variation Playlist Type unhandled: " +
 					INTERNAL_variationType.ToString()
 				);

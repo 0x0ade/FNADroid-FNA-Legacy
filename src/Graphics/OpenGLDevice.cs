@@ -1,18 +1,9 @@
 #region License
 /* FNA - XNA4 Reimplementation for Desktop Platforms
- * Copyright 2009-2015 Ethan Lee and the MonoGame Team
+ * Copyright 2009-2016 Ethan Lee and the MonoGame Team
  *
  * Released under the Microsoft Public License.
  * See LICENSE for details.
- */
-#endregion
-
-#region DISABLE_FAUXBACKBUFFER Option
-// #define DISABLE_FAUXBACKBUFFER
-/* If you want to debug GL without the extra FBO in your way, you can use this.
- * Note that we only enable a faux-backbuffer when the window size is not equal
- * to the backbuffer size!
- * -flibit
  */
 #endregion
 
@@ -482,6 +473,7 @@ namespace Microsoft.Xna.Framework.Graphics
 
 		private bool supportsMultisampling;
 		private bool supportsFauxBackbuffer;
+		private bool supportsBaseVertex;
 
 		#endregion
 
@@ -635,10 +627,10 @@ namespace Microsoft.Xna.Framework.Graphics
 			MojoShader.MOJOSHADER_glMakeContextCurrent(shaderContext);
 
 			// Print GL information
-			System.Console.WriteLine("OpenGL Device: " + glGetString(GLenum.GL_RENDERER));
-			System.Console.WriteLine("OpenGL Driver: " + glGetString(GLenum.GL_VERSION));
-			System.Console.WriteLine("OpenGL Vendor: " + glGetString(GLenum.GL_VENDOR));
-			System.Console.WriteLine("MojoShader Profile: " + shaderProfile);
+			FNAPlatform.Log("OpenGL Device: " + glGetString(GLenum.GL_RENDERER));
+			FNAPlatform.Log("OpenGL Driver: " + glGetString(GLenum.GL_VERSION));
+			FNAPlatform.Log("OpenGL Vendor: " + glGetString(GLenum.GL_VENDOR));
+			FNAPlatform.Log("MojoShader Profile: " + shaderProfile);
 
 			// Load the extension list, initialize extension-dependent components
 			string extensions;
@@ -680,7 +672,6 @@ namespace Microsoft.Xna.Framework.Graphics
 			);
 
 			// Initialize the faux-backbuffer
-#if !DISABLE_FAUXBACKBUFFER
 			int winWidth, winHeight;
 			GetWindowDimensions(
 				presentationParameters,
@@ -707,7 +698,6 @@ namespace Microsoft.Xna.Framework.Graphics
 				);
 			}
 			else
-#endif
 			{
 				Backbuffer = new NullBackbuffer(
 					presentationParameters.BackBufferWidth,
@@ -808,7 +798,6 @@ namespace Microsoft.Xna.Framework.Graphics
 			PresentationParameters presentationParameters,
 			bool renderTargetBound
 		) {
-#if !DISABLE_FAUXBACKBUFFER
 			int winWidth, winHeight;
 			GetWindowDimensions(
 				presentationParameters,
@@ -846,7 +835,6 @@ namespace Microsoft.Xna.Framework.Graphics
 				}
 			}
 			else
-#endif
 			{
 				if (Backbuffer is OpenGLBackbuffer)
 				{
@@ -1139,7 +1127,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			BindIndexBuffer(indices.buffer);
 
 			// Draw!
-			glDrawRangeElements(
+			glDrawRangeElementsBaseVertex(
 				XNAToGL.Primitive[(int) primitiveType],
 				minVertexIndex,
 				minVertexIndex + numVertices - 1,
@@ -1147,7 +1135,8 @@ namespace Microsoft.Xna.Framework.Graphics
 				shortIndices ?
 					GLenum.GL_UNSIGNED_SHORT :
 					GLenum.GL_UNSIGNED_INT,
-				(IntPtr) (startIndex * (shortIndices ? 2 : 4))
+				(IntPtr) (startIndex * (shortIndices ? 2 : 4)),
+				baseVertex
 			);
 		}
 
@@ -1170,14 +1159,15 @@ namespace Microsoft.Xna.Framework.Graphics
 			bool shortIndices = indices.IndexElementSize == IndexElementSize.SixteenBits;
 
 			// Draw!
-			glDrawElementsInstanced(
+			glDrawElementsInstancedBaseVertex(
 				XNAToGL.Primitive[(int) primitiveType],
 				XNAToGL.PrimitiveVerts(primitiveType, primitiveCount),
 				shortIndices ?
 					GLenum.GL_UNSIGNED_SHORT :
 					GLenum.GL_UNSIGNED_INT,
 				(IntPtr) (startIndex * (shortIndices ? 2 : 4)),
-				instanceCount
+				instanceCount,
+				baseVertex
 			);
 		}
 
@@ -1788,7 +1778,9 @@ namespace Microsoft.Xna.Framework.Graphics
 			glEffect = MojoShader.MOJOSHADER_glCompileEffect(effect);
 			if (glEffect == IntPtr.Zero)
 			{
-				throw new Exception(MojoShader.MOJOSHADER_glGetError());
+				throw new InvalidOperationException(
+					MojoShader.MOJOSHADER_glGetError()
+				);
 			}
 
 #if !DISABLE_THREADING
@@ -1826,7 +1818,9 @@ namespace Microsoft.Xna.Framework.Graphics
 			glEffect = MojoShader.MOJOSHADER_glCompileEffect(effect);
 			if (glEffect == IntPtr.Zero)
 			{
-				throw new Exception(MojoShader.MOJOSHADER_glGetError());
+				throw new InvalidOperationException(
+					MojoShader.MOJOSHADER_glGetError()
+				);
 			}
 
 #if !DISABLE_THREADING
@@ -1915,6 +1909,11 @@ namespace Microsoft.Xna.Framework.Graphics
 			bool bindingsUpdated,
 			int baseVertex
 		) {
+			if (supportsBaseVertex)
+			{
+				baseVertex = 0;
+			}
+
 			if (	bindingsUpdated ||
 				baseVertex != ldBaseVertex ||
 				currentEffect != ldEffect ||
@@ -3552,12 +3551,13 @@ namespace Microsoft.Xna.Framework.Graphics
 				glDisable(GLenum.GL_SCISSOR_TEST);
 			}
 
+			bool clearTarget = (options & ClearOptions.Target) == ClearOptions.Target;
 			bool clearDepth = (options & ClearOptions.DepthBuffer) == ClearOptions.DepthBuffer;
 			bool clearStencil = (options & ClearOptions.Stencil) == ClearOptions.Stencil;
 
 			// Get the clear mask, set the clear properties if needed
 			GLenum clearMask = GLenum.GL_ZERO;
-			if ((options & ClearOptions.Target) == ClearOptions.Target)
+			if (clearTarget)
 			{
 				clearMask |= GLenum.GL_COLOR_BUFFER_BIT;
 				if (!color.Equals(currentClearColor))
@@ -3615,7 +3615,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			{
 				glEnable(GLenum.GL_SCISSOR_TEST);
 			}
-			if (colorWriteEnable != ColorWriteChannels.All)
+			if (clearTarget && colorWriteEnable != ColorWriteChannels.All)
 			{
 				// FIXME: ColorWriteChannels1/2/3? -flibit
 				glColorMask(
@@ -4126,7 +4126,7 @@ namespace Microsoft.Xna.Framework.Graphics
 					4,	// VertexElementFormat.Color
 					4,	// VertexElementFormat.Byte4
 					2,	// VertexElementFormat.Short2
-					2,	// VertexElementFormat.Short4
+					4,	// VertexElementFormat.Short4
 					2,	// VertexElementFormat.NormalizedShort2
 					4,	// VertexElementFormat.NormalizedShort4
 					2,	// VertexElementFormat.HalfVector2

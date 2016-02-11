@@ -1,6 +1,6 @@
 #region License
 /* FNA - XNA4 Reimplementation for Desktop Platforms
- * Copyright 2009-2015 Ethan Lee and the MonoGame Team
+ * Copyright 2009-2016 Ethan Lee and the MonoGame Team
  *
  * Released under the Microsoft Public License.
  * See LICENSE for details.
@@ -459,7 +459,7 @@ namespace Microsoft.Xna.Framework.Audio
 			}
 			else
 			{
-				throw new Exception("DSP parameter unhandled: " + index.ToString());
+				throw new NotImplementedException("DSP parameter unhandled: " + index.ToString());
 			}
 		}
 	}

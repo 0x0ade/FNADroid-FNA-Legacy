@@ -1,6 +1,6 @@
 #region License
 /* FNA - XNA4 Reimplementation for Desktop Platforms
- * Copyright 2009-2015 Ethan Lee and the MonoGame Team
+ * Copyright 2009-2016 Ethan Lee and the MonoGame Team
  *
  * Released under the Microsoft Public License.
  * See LICENSE for details.
@@ -9,8 +9,6 @@
 
 #region Using Statements
 using System;
-
-using SDL2;
 #endregion
 
 namespace Microsoft.Xna.Framework.Input
@@ -32,18 +30,17 @@ namespace Microsoft.Xna.Framework.Input
 
 		#region Internal Variables
 
-		internal static int INTERNAL_WindowWidth = 800;
-		internal static int INTERNAL_WindowHeight = 600;
+		internal static int INTERNAL_WindowWidth = GraphicsDeviceManager.DefaultBackBufferWidth;
+		internal static int INTERNAL_WindowHeight = GraphicsDeviceManager.DefaultBackBufferHeight;
+		internal static int INTERNAL_BackBufferWidth = GraphicsDeviceManager.DefaultBackBufferWidth;
+		internal static int INTERNAL_BackBufferHeight = GraphicsDeviceManager.DefaultBackBufferHeight;
 
 		internal static int INTERNAL_MouseWheel = 0;
 
+		// FIXME: Remove when global mouse state is accessible! -flibit
 		internal static bool INTERNAL_IsWarped = false;
-
-		#endregion
-
-		#region Private Variables
-
-		private static MouseState state;
+		internal static int INTERNAL_warpX = 0;
+		internal static int INTERNAL_warpY = 0;
 
 		#endregion
 
@@ -57,25 +54,41 @@ namespace Microsoft.Xna.Framework.Input
 		public static MouseState GetState()
 		{
 			int x, y;
-			uint flags = SDL.SDL_GetMouseState(out x, out y);
+			ButtonState left, middle, right, x1, x2;
+
+			FNAPlatform.GetMouseState(
+				out x,
+				out y,
+				out left,
+				out middle,
+				out right,
+				out x1,
+				out x2
+			);
 
 			// If we warped the mouse, we've already done this in SetPosition.
-			if (!INTERNAL_IsWarped)
+			if (INTERNAL_IsWarped)
+			{
+				x = INTERNAL_warpX;
+				y = INTERNAL_warpY;
+			}
+			else
 			{
 				// Scale the mouse coordinates for the faux-backbuffer
-				state.X = (int) ((double) x * Game.Instance.GraphicsDevice.GLDevice.Backbuffer.Width / INTERNAL_WindowWidth);
-				state.Y = (int) ((double) y * Game.Instance.GraphicsDevice.GLDevice.Backbuffer.Height / INTERNAL_WindowHeight);
+				x = (int) ((double) x * INTERNAL_BackBufferWidth / INTERNAL_WindowWidth);
+				y = (int) ((double) y * INTERNAL_BackBufferHeight / INTERNAL_WindowHeight);
 			}
 
-			state.LeftButton =	(ButtonState) (flags & SDL.SDL_BUTTON_LMASK);
-			state.MiddleButton =	(ButtonState) ((flags & SDL.SDL_BUTTON_MMASK) >> 1);
-			state.RightButton =	(ButtonState) ((flags & SDL.SDL_BUTTON_RMASK) >> 2);
-			state.XButton1 =	(ButtonState) ((flags & SDL.SDL_BUTTON_X1MASK) >> 3);
-			state.XButton2 =	(ButtonState) ((flags & SDL.SDL_BUTTON_X2MASK) >> 4);
-
-			state.ScrollWheelValue = INTERNAL_MouseWheel;
-
-			return state;
+			return new MouseState(
+				x,
+				y,
+				INTERNAL_MouseWheel,
+				left,
+				middle,
+				right,
+				x1,
+				x2
+			);
 		}
 
 		/// <summary>
@@ -86,14 +99,14 @@ namespace Microsoft.Xna.Framework.Input
 		public static void SetPosition(int x, int y)
 		{
 			// The state should appear to be what they _think_ they're setting first.
-			state.X = x;
-			state.Y = y;
+			INTERNAL_warpX = x;
+			INTERNAL_warpY = y;
 
 			// Scale the mouse coordinates for the faux-backbuffer
-			x = (int) ((double) x * INTERNAL_WindowWidth / Game.Instance.GraphicsDevice.GLDevice.Backbuffer.Width);
-			y = (int) ((double) y * INTERNAL_WindowHeight / Game.Instance.GraphicsDevice.GLDevice.Backbuffer.Height);
+			x = (int) ((double) x * INTERNAL_WindowWidth / INTERNAL_BackBufferWidth);
+			y = (int) ((double) y * INTERNAL_WindowHeight / INTERNAL_BackBufferHeight);
 
-			SDL.SDL_WarpMouseInWindow(WindowHandle, x, y);
+			FNAPlatform.SetMousePosition(WindowHandle, x, y);
 			INTERNAL_IsWarped = true;
 		}
 

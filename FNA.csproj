@@ -157,12 +157,12 @@
     <Compile Include="src\Design\Vector4Converter.cs" />
     <Compile Include="src\DisplayOrientation.cs" />
     <Compile Include="src\DrawableGameComponent.cs" />
+    <Compile Include="src\FNAPlatform.cs" />
     <Compile Include="src\FrameworkDispatcher.cs" />
     <Compile Include="src\Game.cs" />
     <Compile Include="src\GameComponent.cs" />
     <Compile Include="src\GameComponentCollection.cs" />
     <Compile Include="src\GameComponentCollectionEventArgs.cs" />
-    <Compile Include="src\GamePlatform.cs" />
     <Compile Include="src\GameServiceContainer.cs" />
     <Compile Include="src\GameTime.cs" />
     <Compile Include="src\GameWindow.cs" />
@@ -304,6 +304,7 @@
 	<Compile Include="src\Input\Touch\TouchPanelState.cs" />
     <Compile Include="src\Input\Buttons.cs" />
     <Compile Include="src\Input\ButtonState.cs" />
+    <Compile Include="src\Input\GamePad.cs" />
     <Compile Include="src\Input\GamePadButtons.cs" />
     <Compile Include="src\Input\GamePadCapabilities.cs" />
     <Compile Include="src\Input\GamePadDeadZone.cs" />
@@ -316,6 +317,7 @@
     <Compile Include="src\Input\KeyboardState.cs" />
     <Compile Include="src\Input\Keys.cs" />
     <Compile Include="src\Input\KeyState.cs" />
+    <Compile Include="src\Input\Mouse.cs" />
     <Compile Include="src\Input\MouseState.cs" />
     <Compile Include="src\Input\TextInputEXT.cs" />
     <Compile Include="src\IUpdateable.cs" />
@@ -341,11 +343,9 @@
     <Compile Include="src\Quaternion.cs" />
     <Compile Include="src\Ray.cs" />
     <Compile Include="src\Rectangle.cs" />
-    <Compile Include="src\SDL2\Input\SDL2_GamePad.cs" />
-    <Compile Include="src\SDL2\Input\SDL2_KeyboardUtil.cs" />
-    <Compile Include="src\SDL2\Input\SDL2_Mouse.cs" />
-    <Compile Include="src\SDL2\SDL2_GamePlatform.cs" />
+    <Compile Include="src\SDL2\SDL2_FNAPlatform.cs" />
     <Compile Include="src\SDL2\SDL2_GameWindow.cs" />
+    <Compile Include="src\SDL2\SDL2_KeyboardUtil.cs" />
     <Compile Include="src\Storage\StorageContainer.cs" />
     <Compile Include="src\Storage\StorageDevice.cs" />
     <Compile Include="src\Storage\StorageDeviceNotConnectedException.cs" />

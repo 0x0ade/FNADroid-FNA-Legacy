@@ -1,6 +1,6 @@
 #region License
 /* FNA - XNA4 Reimplementation for Desktop Platforms
- * Copyright 2009-2015 Ethan Lee and the MonoGame Team
+ * Copyright 2009-2016 Ethan Lee and the MonoGame Team
  *
  * Released under the Microsoft Public License.
  * See LICENSE for details.
@@ -35,6 +35,7 @@ using System.Diagnostics;
 using System.Reflection;
 
 using Microsoft.Xna.Framework.Audio;
+using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input.Touch;
@@ -86,7 +87,15 @@ namespace Microsoft.Xna.Framework
 		{
 			get
 			{
-				return Platform.IsActive;
+				return _isActive;
+			}
+			internal set
+			{
+				if (_isActive != value)
+				{
+					_isActive = value;
+					Raise(_isActive ? Activated : Deactivated, EventArgs.Empty);
+				}
 			}
 		}
 
@@ -94,11 +103,15 @@ namespace Microsoft.Xna.Framework
 		{
 			get
 			{
-				return Platform.IsMouseVisible;
+				return _isMouseVisible;
 			}
 			set
 			{
-				Platform.IsMouseVisible = value;
+				if (_isMouseVisible != value)
+				{
+					_isMouseVisible = value;
+					FNAPlatform.OnIsMouseVisibleChanged(value);
+				}
 			}
 		}
 
@@ -110,11 +123,6 @@ namespace Microsoft.Xna.Framework
 			}
 			set
 			{
-				/* Give GamePlatform implementations an opportunity to override
-				 * the new value.
-				 */
-				value = Platform.TargetElapsedTimeChanging(value);
-
 				if (value <= TimeSpan.Zero)
 				{
 					throw new ArgumentOutOfRangeException(
@@ -123,11 +131,7 @@ namespace Microsoft.Xna.Framework
 					);
 				}
 
-				if (value != _targetElapsedTime)
-				{
-					_targetElapsedTime = value;
-					Platform.TargetElapsedTimeChanged();
-				}
+				_targetElapsedTime = value;
 			}
 		}
 
@@ -191,7 +195,16 @@ namespace Microsoft.Xna.Framework
 		{
 			get
 			{
-				return Platform.Window;
+				return _window;
+			}
+			internal set
+			{
+				if (_window == null)
+				{
+					Mouse.WindowHandle = value.Handle;
+				}
+
+				_window = value;
 			}
 		}
 
@@ -199,9 +212,10 @@ namespace Microsoft.Xna.Framework
 
 		#region Internal Fields
 
+		/* This variable solely exists for the VideoPlayer -flibit */
 		internal static Game Instance = null;
 
-		internal GamePlatform Platform;
+		internal bool RunApplication;
 
 		#endregion
 
@@ -232,6 +246,11 @@ namespace Microsoft.Xna.Framework
 			);
 
 		private IGraphicsDeviceService _graphicsDeviceService;
+
+		private GameWindow _window;
+
+		private bool _isActive = true;
+		private bool _isMouseVisible = false;
 
 		private bool _initialized = false;
 		private bool _isFixedTimeStep = true;
@@ -269,12 +288,12 @@ namespace Microsoft.Xna.Framework
 			_components = new GameComponentCollection();
 			_content = new ContentManager(_services);
 
-			Platform = GamePlatform.Create(this);
-			Platform.Activated += OnActivated;
-			Platform.Deactivated += OnDeactivated;
-			_services.AddService(typeof(GamePlatform), Platform);
+			Window = FNAPlatform.CreateWindow();
 
 			AudioDevice.Initialize();
+
+			// Ready to run the loop!
+			RunApplication = true;
 		}
 
 		#endregion
@@ -331,14 +350,12 @@ namespace Microsoft.Xna.Framework
 
 					AudioDevice.Dispose();
 
-					if (Platform != null)
+					if (Window != null)
 					{
-						Platform.Activated -= OnActivated;
-						Platform.Deactivated -= OnDeactivated;
-						_services.RemoveService(typeof(GamePlatform));
-						Platform.Dispose();
-						Platform = null;
+						FNAPlatform.DisposeWindow(Window);
+						Window = null;
 					}
+					Mouse.WindowHandle = IntPtr.Zero;
 
 					ContentTypeReaderManager.ClearTypeCreators();
 				}
@@ -381,7 +398,7 @@ namespace Microsoft.Xna.Framework
 
 		public void Exit()
 		{
-			Platform.Exit();
+			RunApplication = false;
 			_suppressDraw = true;
 		}
 
@@ -389,7 +406,6 @@ namespace Microsoft.Xna.Framework
 		{
 			if (_initialized)
 			{
-				Platform.ResetElapsedTime();
 				_gameTimer.Reset();
 				_gameTimer.Start();
 				_accumulatedElapsedTime = TimeSpan.Zero;
@@ -405,11 +421,6 @@ namespace Microsoft.Xna.Framework
 
 		public void RunOneFrame()
 		{
-			if (Platform == null || !Platform.BeforeRun())
-			{
-				return;
-			}
-
 			if (!_initialized)
 			{
 				DoInitialize();
@@ -428,12 +439,6 @@ namespace Microsoft.Xna.Framework
 		public void Run()
 		{
 			AssertNotDisposed();
-			if (!Platform.BeforeRun())
-			{
-				BeginRun();
-				_gameTimer = Stopwatch.StartNew();
-				return;
-			}
 
 			if (!_initialized)
 			{
@@ -444,7 +449,7 @@ namespace Microsoft.Xna.Framework
 			BeginRun();
 			_gameTimer = Stopwatch.StartNew();
 
-			Platform.RunLoop();
+			FNAPlatform.RunLoop(this);
 
 			EndRun();
 
@@ -568,7 +573,7 @@ namespace Microsoft.Xna.Framework
 				 * http://stackoverflow.com/questions/4054936/manual-control-over-when-to-redraw-the-screen/4057180#4057180
 				 * http://stackoverflow.com/questions/4235439/xna-3-1-to-4-0-requires-constant-redraw-or-will-display-a-purple-screen
 				 */
-				if (Platform.BeforeDraw(_gameTime) && BeginDraw())
+				if (BeginDraw())
 				{
 					Draw(_gameTime);
 					EndDraw();
@@ -633,7 +638,10 @@ namespace Microsoft.Xna.Framework
 				12
 			);
 #endif
-			Platform.Present();
+			if (GraphicsDevice != null)
+			{
+				GraphicsDevice.Present();
+			}
 		}
 
 		protected virtual void BeginRun()
@@ -762,7 +770,7 @@ namespace Microsoft.Xna.Framework
 		{
 			if (exception is NoAudioHardwareException)
 			{
-				Platform.ShowRuntimeError(
+				FNAPlatform.ShowRuntimeError(
 					Window.Title,
 					"Could not find a suitable audio device. " +
 					" Verify that a sound card is\ninstalled," +
@@ -773,7 +781,7 @@ namespace Microsoft.Xna.Framework
 			}
 			if (exception is NoSuitableGraphicsDeviceException)
 			{
-				Platform.ShowRuntimeError(
+				FNAPlatform.ShowRuntimeError(
 					Window.Title,
 					"Could not find a suitable graphics device." +
 					" More information:\n\n" + exception.Message
@@ -781,19 +789,6 @@ namespace Microsoft.Xna.Framework
 				return true;
 			}
 			return false;
-		}
-
-		#endregion
-
-		#region Internal Methods
-
-		[Conditional("DEBUG")]
-		internal void Log(string Message)
-		{
-			if (Platform != null)
-			{
-				Platform.Log(Message);
-			}
 		}
 
 		#endregion
@@ -811,17 +806,13 @@ namespace Microsoft.Xna.Framework
 #if BASIC_PROFILER
 			updateStart = _gameTimer.ElapsedTicks;
 #endif
-			if (Platform.BeforeUpdate(gameTime))
-			{
-				AudioDevice.Update();
+			AudioDevice.Update();
 
-				Update(gameTime);
-				
-				/* The TouchPanel needs to know the time for when
-				 * touches arrive.
-				 */
-				TouchPanelStateEXT.CurrentTimestamp = gameTime.TotalGameTime;
-			}
+			Update(gameTime);
+			/* The TouchPanel needs to know the time for when
+			* touches arrive.
+			*/
+			TouchPanelStateEXT.CurrentTimestamp = gameTime.TotalGameTime;
 #if BASIC_PROFILER
 			updateTime = _gameTimer.ElapsedTicks - updateStart;
 #endif
@@ -830,7 +821,17 @@ namespace Microsoft.Xna.Framework
 		private void DoInitialize()
 		{
 			AssertNotDisposed();
-			Platform.BeforeInitialize();
+
+			if (GraphicsDevice == null)
+			{
+				IGraphicsDeviceManager graphicsDeviceManager = Services.GetService(
+					typeof(IGraphicsDeviceManager)
+				) as IGraphicsDeviceManager;
+
+				graphicsDeviceManager.CreateDevice();
+			}
+
+			FNAPlatform.BeforeInitialize();
 			Initialize();
 
 			/* We need to do this after virtual Initialize(...) is called.
@@ -1248,6 +1249,22 @@ namespace Microsoft.Xna.Framework
 				}
 
 				return object.Equals(Item, ((AddJournalEntry<T>) obj).Item);
+			}
+		}
+
+		#endregion
+
+		#region FNA Extensions
+
+		public static void LogHookEXT(Action<string> logFunc)
+		{
+			if (logFunc == null)
+			{
+				FNAPlatform.UnhookLogger();
+			}
+			else
+			{
+				FNAPlatform.Log = logFunc;
 			}
 		}
 
