@@ -635,6 +635,11 @@ namespace Microsoft.Xna.Framework
 				}
 				return osConfigDir;
 			}
+			if (OSVersion.Equals("Android"))
+			{
+				//We're in the game directory on the sdcard by default. It should be enough for now. -ade
+				return ".";
+			}
 			throw new NotSupportedException("Unhandled SDL2 platform!");
 		}
 
