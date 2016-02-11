@@ -452,6 +452,21 @@ namespace Microsoft.Xna.Framework
 			) == 1) {
 				INTERNAL_AddInstance(evt[0].cdevice.which);
 			}
+			
+			/* Sometimes Android hates us.
+			 * Sometimes it hates us horribly.
+			 * And sometimes THIS happens!
+			 *
+			 * Still unsure if SDL2 bug or not. At least it works this way.
+			 * -ade
+			 */
+			 if (OSVersion.Equals("Android")) {
+				 int numJoysticks = SDL.SDL_NumJoysticks();
+				 for (int i = 0; i < numJoysticks; i++) {
+					 INTERNAL_AddInstance(i);
+				 }
+			 }
+			
 		}
 
 		public static IGLDevice CreateGLDevice(
@@ -1384,6 +1399,18 @@ namespace Microsoft.Xna.Framework
 					result.Append((char) resChar[7]);
 				}
 			}
+			else if (OSVersion.Equals("Android"))
+ 			{
+				//Android is weird... starts with 4___, ends with 726f. Let's pick that! -ade
+ 				result.Append((char) resChar[1]);
+ 				result.Append((char) resChar[2]);
+ 				result.Append((char) resChar[3]);
+ 				result.Append((char) resChar[4]);
+ 				result.Append((char) resChar[28]);
+ 				result.Append((char) resChar[29]);
+ 				result.Append((char) resChar[30]);
+ 				result.Append((char) resChar[31]);
+ 			}
 			else
 			{
 				throw new NotSupportedException("Unhandled SDL2 platform!");
