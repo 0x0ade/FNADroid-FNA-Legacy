@@ -99,6 +99,7 @@ namespace Microsoft.Xna.Framework
 				OSVersion.Equals("iOS"),
 				forceCoreProfile
 			);
+			TouchPanel.PrimaryWindow = result;
 
 			// Disable the screensaver.
 			SDL.SDL_DisableScreenSaver();
