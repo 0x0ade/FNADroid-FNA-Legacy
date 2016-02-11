@@ -280,7 +280,7 @@ namespace Microsoft.Xna.Framework.Audio
 				AL10.AL_BITS,
 				out bits
 			);
-			if (bufLen == 0 || bits == 0)
+			if ((bufLen == 0 || bits == 0) && (FNAPlatform.RunLoop == SDL2_FNAPlatform.RunLoop && !SDL2.SDL.SDL_GetPlatform().Equals("Android")))
 			{
 				throw new InvalidOperationException(
 					"OpenAL buffer allocation failed!"
@@ -288,8 +288,8 @@ namespace Microsoft.Xna.Framework.Audio
 			}
 			TimeSpan resultDur = TimeSpan.FromSeconds(
 				bufLen /
-				(bits / 8) /
-				channels /
+				((bits > 0d ? ((double) bits) : 24d) / 8d) /
+				(channels > 0d ? ((double) channels) : 2d) /
 				((double) sampleRate)
 			);
 
