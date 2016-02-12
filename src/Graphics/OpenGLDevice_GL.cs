@@ -871,9 +871,11 @@ namespace Microsoft.Xna.Framework.Graphics
 		private void LoadGLEntryPoints()
 		{
 			string baseErrorString;
-			if (useES2)
+			if (useES != 0)
 			{
-				baseErrorString = "OpenGL ES 2.0";
+				int maj = (int) Math.Floor(useES / 10D);
+				int min = useES - maj * 10;
+				baseErrorString = "OpenGL ES " + maj + "." + min;
 			}
 			else
 			{
@@ -1113,7 +1115,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			 * will certainly not have these.
 			 * -flibit
 			 */
-			if (useES2)
+			if (useES != 0)
 			{
 				ep = SDL.SDL_GL_GetProcAddress("glPolygonMode");
 				if (ep != IntPtr.Zero)
@@ -1253,7 +1255,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			}
 			catch
 			{
-				if (useES2)
+				if (useES != 0)
 				{
 					FNAPlatform.Log("Some non-ES functions failed to load. Beware...");
 				}

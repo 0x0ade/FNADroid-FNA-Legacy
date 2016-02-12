@@ -84,19 +84,32 @@ namespace Microsoft.Xna.Framework
 		public static GameWindow CreateWindow()
 		{
 			// GLContext environment variables
-			bool forceES2 = Environment.GetEnvironmentVariable(
-				"FNA_OPENGL_FORCE_ES2"
-			) == "1";
+			int forceES = 0;
+			if (Environment.GetEnvironmentVariable(
+				"FNA_OPENGL_FORCE_ES2" // For compatibility with original FNA flag
+				) == "1" ||
+				OSVersion.Equals("Emscripten") ||
+				OSVersion.Equals("Android") ||
+				OSVersion.Equals("iOS")) {
+				// Minimum ES version required is 2.0
+				forceES = 20;
+			}
+			string forceESString = Environment.GetEnvironmentVariable(
+				"FNA_OPENGL_FORCE_ES"
+			);
+			if (forceESString != null) {
+				forceES = int.Parse(forceESString.Replace(".", ""));
+				if (!forceESString.Contains(".")) {
+					forceES *= 10;
+				}
+			}
 			bool forceCoreProfile = Environment.GetEnvironmentVariable(
 				"FNA_OPENGL_FORCE_CORE_PROFILE"
 			) == "1";
 
 			// Set and initialize the SDL2 window
 			GameWindow result = new SDL2_GameWindow(
-				forceES2 ||
-				OSVersion.Equals("Emscripten") ||
-				OSVersion.Equals("Android") ||
-				OSVersion.Equals("iOS"),
+				forceES,
 				forceCoreProfile
 			);
 			TouchPanel.PrimaryWindow = result;

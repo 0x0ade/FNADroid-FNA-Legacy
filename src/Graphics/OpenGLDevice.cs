@@ -537,7 +537,7 @@ namespace Microsoft.Xna.Framework.Graphics
 
 		#region Private Profile-specific Variables
 
-		private bool useES2;
+		private int useES = 0;
 		private bool useCoreProfile;
 		private uint vao;
 
@@ -595,7 +595,12 @@ namespace Microsoft.Xna.Framework.Graphics
 			int flags;
 			int es2Flag = (int) SDL.SDL_GLprofile.SDL_GL_CONTEXT_PROFILE_ES;
 			SDL.SDL_GL_GetAttribute(SDL.SDL_GLattr.SDL_GL_CONTEXT_PROFILE_MASK, out flags);
-			useES2 = (flags & es2Flag) == es2Flag;
+			if ((flags & es2Flag) == es2Flag) {
+				SDL.SDL_GL_GetAttribute(SDL.SDL_GLattr.SDL_GL_CONTEXT_MAJOR_VERSION, out flags);
+				useES = flags * 10;
+				SDL.SDL_GL_GetAttribute(SDL.SDL_GLattr.SDL_GL_CONTEXT_MINOR_VERSION, out flags);
+				useES += flags;
+			}
 
 			// Check for a possible Core context
 			int coreFlag = (int) SDL.SDL_GLprofile.SDL_GL_CONTEXT_PROFILE_CORE;
@@ -1734,7 +1739,14 @@ namespace Microsoft.Xna.Framework.Graphics
 			}
 			if (sampler.MipMapLevelOfDetailBias != tex.LODBias)
 			{
-				System.Diagnostics.Debug.Assert(!useES2);
+				/*
+				 * I'm unsure if ES3 supports TEXTURE_LOD_BIAS.
+				 * MAX_TEXTURE_LOD_BIAS appears in the specs, but
+				 * FNA disabled it completely for ES before.
+				 *
+				 * -ade
+				 */
+				System.Diagnostics.Debug.Assert(useES == 0 || 30 <= useES);
 				tex.LODBias = sampler.MipMapLevelOfDetailBias;
 				glTexParameterf(
 					tex.Target,
@@ -2426,7 +2438,7 @@ namespace Microsoft.Xna.Framework.Graphics
 				GLenum.GL_TEXTURE_BASE_LEVEL,
 				result.MaxMipmapLevel
 			);
-			if (!useES2)
+			if (useES == 0 || 30 <= useES)
 			{
 				glTexParameterf(
 					result.Target,
@@ -3199,7 +3211,7 @@ namespace Microsoft.Xna.Framework.Graphics
 		) where T : struct {
 			bool texUnbound = (	currentDrawBuffers != 1 ||
 						currentAttachments[0] != (texture as OpenGLTexture).Handle	);
-			if (texUnbound && !useES2)
+			if (texUnbound && useES == 0)
 			{
 				return false;
 			}
