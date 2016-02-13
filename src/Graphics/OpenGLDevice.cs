@@ -590,6 +590,11 @@ namespace Microsoft.Xna.Framework.Graphics
 			glContext = SDL.SDL_GL_CreateContext(
 				presentationParameters.DeviceWindowHandle
 			);
+			if (glContext == IntPtr.Zero) {
+				throw new NoSuitableGraphicsDeviceException(
+					SDL.SDL_GetError()
+				);
+			}
 
 			// Check for a possible ES context
 			int flags;
