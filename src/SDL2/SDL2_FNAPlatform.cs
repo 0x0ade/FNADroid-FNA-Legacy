@@ -1576,53 +1576,16 @@ namespace Microsoft.Xna.Framework
 		private static SurfaceFormat INTERNAL_convertPixelFormat(uint pixel)
 		{
 			if (pixel == SDL.SDL_PIXELFORMAT_ABGR8888) return SurfaceFormat.Color;
-			if (pixel == SDL.SDL_PIXELFORMAT_BGR565) return SurfaceFormat.Bgr565;
-			if (pixel == SDL.SDL_PIXELFORMAT_RGB565) return SurfaceFormat.Bgr565; // NVIDIA Tegra 3 - FIXME: Swap R and B
-			if (pixel == SDL.SDL_PIXELFORMAT_BGRA5551) return SurfaceFormat.Bgra5551;
-			if (pixel == SDL.SDL_PIXELFORMAT_BGRA4444) return SurfaceFormat.Bgra4444;
+			else if (pixel == SDL.SDL_PIXELFORMAT_BGR565) return SurfaceFormat.Bgr565;
+			else if (pixel == SDL.SDL_PIXELFORMAT_RGB565) return SurfaceFormat.Bgr565; // many Android devices - technically incorrect
+			else if (pixel == SDL.SDL_PIXELFORMAT_BGRA5551) return SurfaceFormat.Bgra5551;
+			else if (pixel == SDL.SDL_PIXELFORMAT_BGRA4444) return SurfaceFormat.Bgra4444;
+			else if (pixel == SDL.SDL_PIXELFORMAT_RGB888) return SurfaceFormat.Color; // desktop - technically incorrect
 
 #if DEBUG
-			string name = "?";
-			if (pixel == SDL.SDL_PIXELFORMAT_UNKNOWN) name = "SDL_PIXELFORMAT_UNKNOWN";
-			if (pixel == SDL.SDL_PIXELFORMAT_INDEX1LSB) name = "SDL_PIXELFORMAT_INDEX1LSB";
-			if (pixel == SDL.SDL_PIXELFORMAT_INDEX1MSB) name = "SDL_PIXELFORMAT_INDEX1MSB";
-			if (pixel == SDL.SDL_PIXELFORMAT_INDEX4LSB) name = "SDL_PIXELFORMAT_INDEX4LSB";
-			if (pixel == SDL.SDL_PIXELFORMAT_INDEX4MSB) name = "SDL_PIXELFORMAT_INDEX4MSB";
-			if (pixel == SDL.SDL_PIXELFORMAT_INDEX8) name = "SDL_PIXELFORMAT_INDEX8";
-			if (pixel == SDL.SDL_PIXELFORMAT_RGB332) name = "SDL_PIXELFORMAT_RGB332";
-			if (pixel == SDL.SDL_PIXELFORMAT_RGB444) name = "SDL_PIXELFORMAT_RGB444";
-			if (pixel == SDL.SDL_PIXELFORMAT_RGB555) name = "SDL_PIXELFORMAT_RGB555";
-			if (pixel == SDL.SDL_PIXELFORMAT_BGR555) name = "SDL_PIXELFORMAT_BGR555";
-			if (pixel == SDL.SDL_PIXELFORMAT_ARGB4444) name = "SDL_PIXELFORMAT_ARGB4444";
-			if (pixel == SDL.SDL_PIXELFORMAT_RGBA4444) name = "SDL_PIXELFORMAT_RGBA4444";
-			if (pixel == SDL.SDL_PIXELFORMAT_ABGR4444) name = "SDL_PIXELFORMAT_ABGR4444";
-			if (pixel == SDL.SDL_PIXELFORMAT_BGRA4444) name = "SDL_PIXELFORMAT_BGRA4444";
-			if (pixel == SDL.SDL_PIXELFORMAT_ARGB1555) name = "SDL_PIXELFORMAT_ARGB1555";
-			if (pixel == SDL.SDL_PIXELFORMAT_RGBA5551) name = "SDL_PIXELFORMAT_RGBA5551";
-			if (pixel == SDL.SDL_PIXELFORMAT_ABGR1555) name = "SDL_PIXELFORMAT_ABGR1555";
-			if (pixel == SDL.SDL_PIXELFORMAT_BGRA5551) name = "SDL_PIXELFORMAT_BGRA5551";
-			if (pixel == SDL.SDL_PIXELFORMAT_RGB565) name = "SDL_PIXELFORMAT_RGB565";
-			if (pixel == SDL.SDL_PIXELFORMAT_BGR565) name = "SDL_PIXELFORMAT_BGR565";
-			if (pixel == SDL.SDL_PIXELFORMAT_RGB24) name = "SDL_PIXELFORMAT_RGB24";
-			if (pixel == SDL.SDL_PIXELFORMAT_BGR24) name = "SDL_PIXELFORMAT_BGR24";
-			if (pixel == SDL.SDL_PIXELFORMAT_RGB888) name = "SDL_PIXELFORMAT_RGB888";
-			if (pixel == SDL.SDL_PIXELFORMAT_RGBX8888) name = "SDL_PIXELFORMAT_RGBX8888";
-			if (pixel == SDL.SDL_PIXELFORMAT_BGR888) name = "SDL_PIXELFORMAT_BGR888";
-			if (pixel == SDL.SDL_PIXELFORMAT_BGRX8888) name = "SDL_PIXELFORMAT_BGRX8888";
-			if (pixel == SDL.SDL_PIXELFORMAT_ARGB8888) name = "SDL_PIXELFORMAT_ARGB8888";
-			if (pixel == SDL.SDL_PIXELFORMAT_RGBA8888) name = "SDL_PIXELFORMAT_RGBA8888";
-			if (pixel == SDL.SDL_PIXELFORMAT_ABGR8888) name = "SDL_PIXELFORMAT_ABGR8888";
-			if (pixel == SDL.SDL_PIXELFORMAT_BGRA8888) name = "SDL_PIXELFORMAT_BGRA8888";
-			if (pixel == SDL.SDL_PIXELFORMAT_ARGB2101010) name = "SDL_PIXELFORMAT_ARGB2101010";
-			if (pixel == SDL.SDL_PIXELFORMAT_YV12) name = "SDL_PIXELFORMAT_YV12";
-			if (pixel == SDL.SDL_PIXELFORMAT_IYUV) name = "SDL_PIXELFORMAT_IYUV";
-			if (pixel == SDL.SDL_PIXELFORMAT_YUY2) name = "SDL_PIXELFORMAT_YUY2";
-			if (pixel == SDL.SDL_PIXELFORMAT_UYVY) name = "SDL_PIXELFORMAT_UYVY";
-			if (pixel == SDL.SDL_PIXELFORMAT_YVYU) name = "SDL_PIXELFORMAT_YVYU";
-			FNAPlatform.Log("Can't convert SDL PIXELFORMAT to FNA SurfaceFormat: " + name + " (" + pixel + ")");
+			FNAPlatform.Log("Can't convert SDL PIXELFORMAT to FNA SurfaceFormat: " + SDL.SDL_GetPixelFormatName(pixel) + " (" + pixel + ")");
 #endif
 
-			// FIXME: Convert more?
 			return SurfaceFormat.Color; // FIXME: fallback?
 		}
 
