@@ -127,16 +127,15 @@ namespace Microsoft.Xna.Framework.Input.Touch
 		private static readonly List<TouchLocation> gestureState = new List<TouchLocation>();
 		
 		/// <summary>
-		/// The next touch location identifier.
-		/// The value 1 is reserved for the mouse touch point.
-		/// </summary>
-		private static int nextTouchId = 2;
-
-		/// <summary>
 		/// The mapping between platform specific touch ids
 		/// and the touch ids we assign to touch locations.
 		/// </summary>
 		private static readonly Dictionary<int, int> touchIds = new Dictionary<int, int>();
+		
+		/// <summary>
+		/// List of all currently used touch ID values in touchIDs.
+		/// </summary>
+		private static readonly List<int> touchIdsUsed = new List<int>();
 
 		private static TouchPanelCapabilities capabilities = new TouchPanelCapabilities();
 
@@ -258,7 +257,15 @@ namespace Microsoft.Xna.Framework.Input.Touch
 			 */
 			if (state == TouchLocationState.Pressed)
 			{
-				touchIds[id] = nextTouchId += 1;
+				int minId = 0;
+				for (int i = 0; i < touchIdsUsed.Count; i++) {
+					if (touchIdsUsed[i] == minId) {
+						minId++;
+						i = -1; // repeat - we're unordered!
+					}
+				}
+				touchIds[id] = minId;
+				touchIdsUsed.Add(minId);
 			}
 
 			// Try to find the touch id.
@@ -307,6 +314,7 @@ namespace Microsoft.Xna.Framework.Input.Touch
 			if (state == TouchLocationState.Released)
 			{
 				touchIds.Remove(id);
+				touchIdsUsed.Remove(touchId);
 			}
 		}
 
