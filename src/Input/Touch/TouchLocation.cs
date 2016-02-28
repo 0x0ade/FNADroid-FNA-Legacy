@@ -33,6 +33,14 @@ namespace Microsoft.Xna.Framework.Input.Touch
 				return position;
 			}
 		}
+		
+		public float PressureEXT
+		{
+			get
+			{
+				return pressure;
+			}
+		}
 
 		public TouchLocationState State
 		{
@@ -108,6 +116,8 @@ namespace Microsoft.Xna.Framework.Input.Touch
 		private int id;
 		private Vector2 position;
 		private Vector2 previousPosition;
+		private float pressure;
+		private float previousPressure;
 		private TouchLocationState state;
 		private TouchLocationState previousState;
 
@@ -134,7 +144,7 @@ namespace Microsoft.Xna.Framework.Input.Touch
 			TimeSpan.Zero
 		) {
 		}
-
+		
 		public TouchLocation(
 			int id,
 			TouchLocationState state,
@@ -147,6 +157,43 @@ namespace Microsoft.Xna.Framework.Input.Touch
 			position,
 			previousState,
 			previousPosition,
+			TimeSpan.Zero
+		) {
+		}
+		
+		public TouchLocation(
+			int id,
+			TouchLocationState state,
+			Vector2 position,
+			float pressure
+		) : this(
+			id,
+			state,
+			position,
+			pressure,
+			TouchLocationState.Invalid,
+			Vector2.Zero,
+			0f,
+			TimeSpan.Zero
+		) {
+		}
+
+		public TouchLocation(
+			int id,
+			TouchLocationState state,
+			Vector2 position,
+			float pressure,
+			TouchLocationState previousState,
+			Vector2 previousPosition,
+			float previousPressure
+		) : this(
+			id,
+			state,
+			position,
+			pressure,
+			previousState,
+			previousPosition,
+			previousPressure,
 			TimeSpan.Zero
 		) {
 		}
@@ -169,7 +216,25 @@ namespace Microsoft.Xna.Framework.Input.Touch
 			timestamp
 		) {
 		}
-
+		
+		internal TouchLocation(
+			int id,
+			TouchLocationState state,
+			Vector2 position,
+			float pressure,
+			TimeSpan timestamp
+		) : this(
+			id,
+			state,
+			position,
+			pressure,
+			TouchLocationState.Invalid,
+			Vector2.Zero,
+			0f,
+			timestamp
+		) {
+		}
+		
 		internal TouchLocation(
 			int id,
 			TouchLocationState state,
@@ -177,13 +242,36 @@ namespace Microsoft.Xna.Framework.Input.Touch
 			TouchLocationState previousState,
 			Vector2 previousPosition,
 			TimeSpan timestamp
+		) : this(
+			id,
+			state,
+			position,
+			0f,
+			previousState,
+			previousPosition,
+			0f,
+			timestamp
+		) {
+		}
+
+		internal TouchLocation(
+			int id,
+			TouchLocationState state,
+			Vector2 position,
+			float pressure,
+			TouchLocationState previousState,
+			Vector2 previousPosition,
+			float previousPressure,
+			TimeSpan timestamp
 		) {
 			this.id = id;
 			this.state = state;
 			this.position = position;
+			this.pressure = pressure;
 
 			this.previousState = previousState;
 			this.previousPosition = previousPosition;
+			this.previousPressure = previousPressure;
 
 			this.timestamp = timestamp;
 			velocity = Vector2.Zero;
@@ -216,8 +304,10 @@ namespace Microsoft.Xna.Framework.Input.Touch
 				aPreviousLocation.id = -1;
 				aPreviousLocation.state = TouchLocationState.Invalid;
 				aPreviousLocation.position = Vector2.Zero;
+				aPreviousLocation.pressure = 0f;
 				aPreviousLocation.previousState = TouchLocationState.Invalid;
 				aPreviousLocation.previousPosition = Vector2.Zero;
+				aPreviousLocation.previousPressure = 0f;
 				aPreviousLocation.timestamp = TimeSpan.Zero;
 				aPreviousLocation.pressPosition = Vector2.Zero;
 				aPreviousLocation.pressTimestamp = TimeSpan.Zero;
@@ -229,8 +319,10 @@ namespace Microsoft.Xna.Framework.Input.Touch
 			aPreviousLocation.id = id;
 			aPreviousLocation.state = previousState;
 			aPreviousLocation.position = previousPosition;
+			aPreviousLocation.pressure = previousPressure;
 			aPreviousLocation.previousState = TouchLocationState.Invalid;
 			aPreviousLocation.previousPosition = Vector2.Zero;
+			aPreviousLocation.previousPressure = 0f;
 			aPreviousLocation.timestamp = timestamp;
 			aPreviousLocation.pressPosition = pressPosition;
 			aPreviousLocation.pressTimestamp = pressTimestamp;
@@ -254,8 +346,10 @@ namespace Microsoft.Xna.Framework.Input.Touch
 				"Touch id:" + id.ToString() +
 				" state:" + state.ToString() +
 				" position:" + position.ToString() +
+				" pressure:" + pressure.ToString() +
 				" prevState:" + previousState.ToString() +
-				" prevPosition:" + previousPosition.ToString()
+				" prevPosition:" + previousPosition.ToString() +
+				" prevPressure:" + previousPressure.ToString()
 			);
 		}
 
@@ -273,7 +367,9 @@ namespace Microsoft.Xna.Framework.Input.Touch
 		{
 			return (	id.Equals(other.id) &&
 					position.Equals(other.position) &&
-					previousPosition.Equals(other.previousPosition)	);
+					previousPosition.Equals(other.previousPosition) &&
+					pressure.Equals(other.pressure) &&
+					previousPressure.Equals(other.previousPressure)	);
 		}
 
 		public static bool operator !=(TouchLocation value1, TouchLocation value2)
@@ -281,8 +377,10 @@ namespace Microsoft.Xna.Framework.Input.Touch
 			return (	value1.id != value2.id ||
 					value1.state != value2.state ||
 					value1.position != value2.position ||
+					value1.pressure != value2.pressure ||
 					value1.previousState != value2.previousState ||
-					value1.previousPosition != value2.previousPosition	);
+					value1.previousPosition != value2.previousPosition ||
+					value1.previousPressure != value2.previousPressure	);
 		}
 
 		public static bool operator ==(TouchLocation value1, TouchLocation value2)
@@ -290,8 +388,10 @@ namespace Microsoft.Xna.Framework.Input.Touch
 			return (	value1.id == value2.id &&
 					value1.state == value2.state &&
 					value1.position == value2.position &&
+					value1.pressure == value2.pressure &&
 					value1.previousState == value2.previousState &&
-					value1.previousPosition == value2.previousPosition	);
+					value1.previousPosition == value2.previousPosition &&
+					value1.previousPressure == value2.previousPressure	);
 		}
 
 		#endregion
@@ -309,6 +409,7 @@ namespace Microsoft.Xna.Framework.Input.Touch
 			// Store the current state as the previous.
 			touch.previousState = touch.state;
 			touch.previousPosition = touch.position;
+			touch.previousPressure = touch.pressure;
 
 			// Set the new state.
 			touch.state = TouchLocationState.Moved;
@@ -341,10 +442,12 @@ namespace Microsoft.Xna.Framework.Input.Touch
 
 			// Store the current state as the previous one.
 			previousPosition = position;
+			previousPressure = pressure;
 			previousState = state;
 
 			// Set the new state.
 			position = touchEvent.position;
+			pressure = touchEvent.pressure;
 			if (touchEvent.State == TouchLocationState.Released)
 			{
 				state = touchEvent.state;
@@ -386,6 +489,7 @@ namespace Microsoft.Xna.Framework.Input.Touch
 
 			previousState = state;
 			previousPosition = position;
+			previousPressure = pressure;
 
 			if (SameFrameReleased)
 			{

@@ -112,7 +112,6 @@ namespace Microsoft.Xna.Framework
 				forceES,
 				forceCoreProfile
 			);
-			TouchPanel.PrimaryWindow = result;
 
 			// Disable the screensaver.
 			SDL.SDL_DisableScreenSaver();
@@ -265,7 +264,8 @@ namespace Microsoft.Xna.Framework
 							new Vector2(
 								evt.tfinger.x,
 								evt.tfinger.y
-							)
+							),
+							evt.tfinger.pressure
 						);
 					}
 					else if (evt.type == SDL.SDL_EventType.SDL_FINGERUP)
@@ -276,7 +276,8 @@ namespace Microsoft.Xna.Framework
 							new Vector2(
 								evt.tfinger.x,
 								evt.tfinger.y
-							)
+							),
+							evt.tfinger.pressure
 						);
 					}
 					else if (evt.type == SDL.SDL_EventType.SDL_FINGERMOTION)
@@ -287,7 +288,8 @@ namespace Microsoft.Xna.Framework
 							new Vector2(
 								evt.tfinger.x,
 								evt.tfinger.y
-							)
+							),
+							evt.tfinger.pressure
 						);
 					}
 
