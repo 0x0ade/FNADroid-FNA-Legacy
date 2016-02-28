@@ -259,7 +259,7 @@ namespace Microsoft.Xna.Framework
 					else if (evt.type == SDL.SDL_EventType.SDL_FINGERDOWN)
 					{
 						TouchPanel.AddEvent(
-							(int) evt.tfinger.touchId,
+							(int) evt.tfinger.fingerId,
 							TouchLocationState.Pressed,
 							new Vector2(
 								evt.tfinger.x,
@@ -271,7 +271,7 @@ namespace Microsoft.Xna.Framework
 					else if (evt.type == SDL.SDL_EventType.SDL_FINGERUP)
 					{
 						TouchPanel.AddEvent(
-							(int) evt.tfinger.touchId,
+							(int) evt.tfinger.fingerId,
 							TouchLocationState.Released,
 							new Vector2(
 								evt.tfinger.x,
@@ -283,7 +283,7 @@ namespace Microsoft.Xna.Framework
 					else if (evt.type == SDL.SDL_EventType.SDL_FINGERMOTION)
 					{
 						TouchPanel.AddEvent(
-							(int) evt.tfinger.touchId,
+							(int) evt.tfinger.fingerId,
 							TouchLocationState.Moved,
 							new Vector2(
 								evt.tfinger.x,
