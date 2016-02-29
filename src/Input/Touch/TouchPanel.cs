@@ -114,7 +114,7 @@ namespace Microsoft.Xna.Framework.Input.Touch
 
 		#endregion
 		
-		#region Private Variables
+		#region Private Static Variables
 
 		/// <summary>
 		/// The current touch state.
@@ -170,7 +170,7 @@ namespace Microsoft.Xna.Framework.Input.Touch
 
 		#endregion
 
-		#region Public Methods
+		#region Public Static Methods
 
 		/// <summary>
 		/// Returns capabilities of touch panel device.
@@ -222,7 +222,7 @@ namespace Microsoft.Xna.Framework.Input.Touch
 
 		#endregion
 
-		#region Internal Methods
+		#region Internal Static Methods
 		
 		internal static void AddEvent(
 			int id,
@@ -255,6 +255,15 @@ namespace Microsoft.Xna.Framework.Input.Touch
 			 * ourselves on the press and looking them up on move
 			 * and release events.
 			 */
+			/* Regarding the above comment: The "consistent" behavior was to count up to infinity.
+			 * It has been replaced with that the middle part says.
+			 * This way it still should handle worst-case HW scenarios.
+			 * ... whatever it may be.
+			 *
+			 * FIXME: Is this spec-compilant?
+			 * 
+			 * -ade
+			 */
 			if (state == TouchLocationState.Pressed)
 			{
 				int minId = 0;
@@ -264,8 +273,8 @@ namespace Microsoft.Xna.Framework.Input.Touch
 						i = -1; // repeat - we're unordered!
 					}
 				}
-				touchIds[id] = minId;
 				touchIdsUsed.Add(minId);
+				touchIds[id] = minId;
 			}
 
 			// Try to find the touch id.
@@ -371,7 +380,7 @@ namespace Microsoft.Xna.Framework.Input.Touch
 
 		#endregion
 
-		#region Private Methods
+		#region Private Static Methods
 
 		private static void AgeTouches(List<TouchLocation> state)
 		{
