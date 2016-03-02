@@ -58,6 +58,8 @@ namespace Microsoft.Xna.Framework
 			GetStorageRoot =		SDL2_FNAPlatform.GetStorageRoot;
 			IsStoragePathConnected =	SDL2_FNAPlatform.IsStoragePathConnected;
 			ShowRuntimeError =		SDL2_FNAPlatform.ShowRuntimeError;
+			HasTouch =		SDL2_FNAPlatform.HasTouch;
+			IsOnTouchPlatform =		SDL2_FNAPlatform.IsOnTouchPlatform;
 			TextureDataFromStream =		SDL2_FNAPlatform.TextureDataFromStream;
 			SavePNG =			SDL2_FNAPlatform.SavePNG;
 
@@ -164,6 +166,12 @@ namespace Microsoft.Xna.Framework
 
 		public delegate void ShowRuntimeErrorFunc(string title, string message);
 		public static readonly ShowRuntimeErrorFunc ShowRuntimeError;
+		
+		public delegate bool HasTouchFunc();
+		public static readonly HasTouchFunc HasTouch;
+		
+		public delegate bool IsOnTouchPlatformFunc();
+		public static readonly IsOnTouchPlatformFunc IsOnTouchPlatform;
 
 		public delegate void TextureDataFromStreamFunc(
 			Stream stream,

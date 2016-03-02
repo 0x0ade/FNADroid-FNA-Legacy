@@ -705,6 +705,23 @@ namespace Microsoft.Xna.Framework
 			 */
 			return SDL.SDL_GetNumTouchDevices() > 0;
 		}
+		
+		public static bool IsOnTouchPlatform()
+		{
+			/* Support for touch has been completely dropped for all capable desktop platforms in XNA (Windows 7).
+			 * Sauce: http://blogs.msdn.com/b/shawnhar/archive/2010/09/09/touch-input-on-windows-in-xna-game-studio-4-0.aspx
+			 * Touch should thus ideally only be enabled on mobile platforms.
+			 * If you still want to have touch enabled on desktop, set the environment variable FNA_TOUCH_FORCE_ENABLE to 1.
+			 * -ade
+			 */
+			return
+				OSVersion.Equals("Emscripten") || // Is touch even supported via JSIL?
+				OSVersion.Equals("Android") ||
+				OSVersion.Equals("iOS") ||
+				Environment.GetEnvironmentVariable(
+					"FNA_TOUCH_FORCE_ENABLE"
+				) == "1";
+		}
 
 		public static void TextureDataFromStream(
 			Stream stream,

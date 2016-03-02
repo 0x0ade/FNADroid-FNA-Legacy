@@ -806,7 +806,7 @@ namespace Microsoft.Xna.Framework
 			/* The TouchPanel needs to know the time for when
 			* touches arrive.
 			*/
-			TouchPanel.CurrentTimestamp = gameTime.TotalGameTime;
+			TouchPanel.INTERNAL_CurrentTimestamp = gameTime.TotalGameTime;
 #if BASIC_PROFILER
 			updateTime = _gameTimer.ElapsedTicks - updateStart;
 #endif

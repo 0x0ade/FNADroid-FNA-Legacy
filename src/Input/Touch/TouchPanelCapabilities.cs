@@ -48,8 +48,8 @@ namespace Microsoft.Xna.Framework.Input.Touch
 
 		#endregion
 
-		#region Internal Initialize Method
-
+		#region Internal Initialize Methods
+		
 		internal void Initialize()
 		{
 			if (!initialized)
@@ -57,6 +57,16 @@ namespace Microsoft.Xna.Framework.Input.Touch
 				initialized = true;
 				isConnected = SDL2_FNAPlatform.HasTouch();
 				maximumTouchCount = 8; // FIXME: Monogame hack! How do we get the real number? There doesn't appear to be a method for this in SDL. - SWC
+			}
+		}
+		
+		internal void InitializeStub()
+		{
+			if (!initialized)
+			{
+				initialized = true;
+				isConnected = false;
+				maximumTouchCount = 0;
 			}
 		}
 

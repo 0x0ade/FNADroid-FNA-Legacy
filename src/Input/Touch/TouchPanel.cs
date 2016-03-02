@@ -90,7 +90,7 @@ namespace Microsoft.Xna.Framework.Input.Touch
 		/// <summary>
 		/// The current timestamp that we use for setting the timestamp of new TouchLocations.
 		/// </summary>
-		internal static TimeSpan CurrentTimestamp
+		internal static TimeSpan INTERNAL_CurrentTimestamp
 		{
 			get;
 			set;
@@ -99,7 +99,7 @@ namespace Microsoft.Xna.Framework.Input.Touch
 		#endregion
 
 		#region Internal Static Variables
-
+		
 		/// <summary>
 		/// Maximum distance a touch location can wiggle and
 		/// not be considered to have moved.
@@ -138,6 +138,7 @@ namespace Microsoft.Xna.Framework.Input.Touch
 		private static readonly List<int> touchIdsUsed = new List<int>();
 
 		private static TouchPanelCapabilities capabilities = new TouchPanelCapabilities();
+		private static TouchPanelCapabilities capabilitiesStub = new TouchPanelCapabilities();
 
 		#endregion
 		
@@ -178,12 +179,20 @@ namespace Microsoft.Xna.Framework.Input.Touch
 		/// <returns><see cref="TouchPanelCapabilities"/></returns>
 		public static TouchPanelCapabilities GetCapabilities()
 		{
+			if (!FNAPlatform.IsOnTouchPlatform()) {
+				capabilitiesStub.InitializeStub();
+				return capabilitiesStub;
+			}
 			capabilities.Initialize();
 			return capabilities;
 		}
 
 		public static TouchCollection GetState()
 		{
+			if (!FNAPlatform.IsOnTouchPlatform()) {
+				return TouchCollection.Empty;
+			}
+			
 			/* Clear out touches from previous frames that were
 			 * released on the same frame they were touched that
 			 * haven't been seen.
@@ -197,7 +206,7 @@ namespace Microsoft.Xna.Framework.Input.Touch
 				 * it then trash it.
 				 */
 				if (	touch.SameFrameReleased &&
-					touch.Timestamp < CurrentTimestamp &&
+					touch.Timestamp < INTERNAL_CurrentTimestamp &&
 					touch.State == TouchLocationState.Pressed	)
 				{
 					touchState.RemoveAt(i);
@@ -217,6 +226,9 @@ namespace Microsoft.Xna.Framework.Input.Touch
 		/// <returns><see cref="GestureSample"/></returns>
 		public static GestureSample ReadGesture()
 		{
+			if (!FNAPlatform.IsOnTouchPlatform()) {
+				return default(GestureSample);
+			}
 			return GestureList.Dequeue();
 		}
 
@@ -298,7 +310,7 @@ namespace Microsoft.Xna.Framework.Input.Touch
 				state,
 				position,
 				pressure,
-				CurrentTimestamp
+				INTERNAL_CurrentTimestamp
 			);
 
 			ApplyTouch(touchState, evt);
@@ -351,7 +363,7 @@ namespace Microsoft.Xna.Framework.Input.Touch
 								TouchLocationState.Released,
 								touch.Position,
 								touch.PressureEXT,
-								CurrentTimestamp
+								INTERNAL_CurrentTimestamp
 							)
 						);
 					}
@@ -370,7 +382,7 @@ namespace Microsoft.Xna.Framework.Input.Touch
 								TouchLocationState.Released,
 								touch.Position,
 								touch.PressureEXT,
-								CurrentTimestamp
+								INTERNAL_CurrentTimestamp
 							)
 						);
 					}
@@ -666,7 +678,7 @@ namespace Microsoft.Xna.Framework.Input.Touch
 				return;
 			}
 
-			TimeSpan elapsed = CurrentTimestamp - touch.PressTimestamp;
+			TimeSpan elapsed = INTERNAL_CurrentTimestamp - touch.PressTimestamp;
 			if (elapsed < TimeRequiredForHold)
 			{
 				return;
@@ -749,7 +761,7 @@ namespace Microsoft.Xna.Framework.Input.Touch
 			/* If we pressed and held too long then don't
 			 * generate a tap event for it.
 			 */
-			TimeSpan elapsed = CurrentTimestamp - touch.PressTimestamp;
+			TimeSpan elapsed = INTERNAL_CurrentTimestamp - touch.PressTimestamp;
 			if (elapsed > TimeRequiredForHold)
 			{
 				return;
