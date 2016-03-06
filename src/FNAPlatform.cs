@@ -60,6 +60,7 @@ namespace Microsoft.Xna.Framework
 			ShowRuntimeError =		SDL2_FNAPlatform.ShowRuntimeError;
 			HasTouch =		SDL2_FNAPlatform.HasTouch;
 			IsOnTouchPlatform =		SDL2_FNAPlatform.IsOnTouchPlatform;
+			GetMaximumTouchCount =		SDL2_FNAPlatform.GetMaximumTouchCount;
 			TextureDataFromStream =		SDL2_FNAPlatform.TextureDataFromStream;
 			SavePNG =			SDL2_FNAPlatform.SavePNG;
 
@@ -172,6 +173,9 @@ namespace Microsoft.Xna.Framework
 		
 		public delegate bool IsOnTouchPlatformFunc();
 		public static readonly IsOnTouchPlatformFunc IsOnTouchPlatform;
+		
+		public delegate int GetMaximumTouchCountFunc();
+		public static readonly GetMaximumTouchCountFunc GetMaximumTouchCount;
 
 		public delegate void TextureDataFromStreamFunc(
 			Stream stream,

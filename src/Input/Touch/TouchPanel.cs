@@ -287,6 +287,11 @@ namespace Microsoft.Xna.Framework.Input.Touch
 			 */
 			if (state == TouchLocationState.Pressed)
 			{
+				if (Environment.GetEnvironmentVariable(
+					"FNA_TOUCH_FORCE_MAXIMUM"
+				) != "0" && INTERNAL_TouchIds.Count == FNAPlatform.GetMaximumTouchCount()) {
+					return;
+				}
 				int mId;
 				if (!INTERNAL_TouchIdsXNA) {
 					mId = 0;

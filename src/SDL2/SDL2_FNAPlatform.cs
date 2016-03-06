@@ -722,6 +722,28 @@ namespace Microsoft.Xna.Framework
 					"FNA_TOUCH_FORCE_ENABLE"
 				) == "1";
 		}
+		
+		public static int GetMaximumTouchCount()
+		{
+			/* XNA4 never reports a value higher than 4.
+			 * Sauce: https://msdn.microsoft.com/en-us/library/ff434208(v=xnagamestudio.42).aspx#note
+			 * XNA even ignores additional touches if 4 fingers are already touching the screen.
+			 * To enforce your own maximum, set the environment variable FNA_TOUCH_FORCE_MAXIMUM to your maximum.
+			 * To get the maximum from the device / accept unlimited touches, set FNA_TOUCH_FORCE_MAXIMUM to 0.
+			 * -ade
+			 */
+			string maxEnv = Environment.GetEnvironmentVariable(
+				"FNA_TOUCH_FORCE_MAXIMUM"
+			);
+			int max;
+			if (string.IsNullOrEmpty(maxEnv) || !int.TryParse(maxEnv, out max)) {
+				return 4;
+			}
+			if (max == 0) {
+				// FIXME get maximum touch number
+			}
+			return max;
+		}
 
 		public static void TextureDataFromStream(
 			Stream stream,
