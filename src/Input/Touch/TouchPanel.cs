@@ -85,7 +85,7 @@ namespace Microsoft.Xna.Framework.Input.Touch
 
 		#endregion
 		
-		#region Internal Static Timestamp Property
+		#region Internal Static Properties
 
 		/// <summary>
 		/// The current timestamp that we use for setting the timestamp of new TouchLocations.
@@ -94,6 +94,19 @@ namespace Microsoft.Xna.Framework.Input.Touch
 		{
 			get;
 			set;
+		}
+		
+		/// <summary>
+		/// Whether to set the touch IDs to something similar to XNA. Checks the FNA_TOUCH_IDS_XNA environment var.
+		/// </summary>
+		internal static bool INTERNAL_TouchIdsXNA
+		{
+			get {
+				string val = Environment.GetEnvironmentVariable(
+					"FNA_TOUCH_IDS_XNA"
+				);
+				return string.IsNullOrEmpty(val) || val == "1";
+			}
 		}
 
 		#endregion
@@ -111,7 +124,23 @@ namespace Microsoft.Xna.Framework.Input.Touch
 		internal static readonly Queue<GestureSample> GestureList = new Queue<GestureSample>();
 
 		internal static GameWindow INTERNAL_Window;
-
+		
+		/// <summary>
+		/// The mapping between platform specific touch ids
+		/// and the touch ids we assign to touch locations.
+		/// </summary>
+		internal static readonly Dictionary<int, int> INTERNAL_TouchIds = new Dictionary<int, int>();
+		
+		/// <summary>
+		/// List of all currently used touch ID values in INTERNAL_TouchIds if !INTERNAL_TouchIdsXNA.
+		/// </summary>
+		internal static readonly List<int> INTERNAL_TouchIdsUsed = new List<int>();
+		
+		/// <summary>
+		/// Next ID value if INTERNAL_TouchIdsXNA.
+		/// </summary>
+		internal static int INTERNAL_TouchIdNext = 0;
+		
 		#endregion
 		
 		#region Private Static Variables
@@ -126,17 +155,6 @@ namespace Microsoft.Xna.Framework.Input.Touch
 		/// </summary>
 		private static readonly List<TouchLocation> gestureState = new List<TouchLocation>();
 		
-		/// <summary>
-		/// The mapping between platform specific touch ids
-		/// and the touch ids we assign to touch locations.
-		/// </summary>
-		private static readonly Dictionary<int, int> touchIds = new Dictionary<int, int>();
-		
-		/// <summary>
-		/// List of all currently used touch ID values in touchIDs.
-		/// </summary>
-		private static readonly List<int> touchIdsUsed = new List<int>();
-
 		private static TouchPanelCapabilities capabilities = new TouchPanelCapabilities();
 		private static TouchPanelCapabilities capabilitiesStub = new TouchPanelCapabilities();
 
@@ -267,31 +285,30 @@ namespace Microsoft.Xna.Framework.Input.Touch
 			 * ourselves on the press and looking them up on move
 			 * and release events.
 			 */
-			/* Regarding the above comment: The "consistent" behavior was to count up to infinity.
-			 * It has been replaced with that the middle part says.
-			 * This way it still should handle worst-case HW scenarios.
-			 * ... whatever it may be.
-			 *
-			 * FIXME: Is this spec-compilant?
-			 * 
-			 * -ade
-			 */
 			if (state == TouchLocationState.Pressed)
 			{
-				int minId = 0;
-				for (int i = 0; i < touchIdsUsed.Count; i++) {
-					if (touchIdsUsed[i] == minId) {
-						minId++;
-						i = -1; // repeat - we're unordered!
+				int mId;
+				if (!INTERNAL_TouchIdsXNA) {
+					mId = 0;
+					for (int i = 0; i < INTERNAL_TouchIdsUsed.Count; i++) {
+						if (INTERNAL_TouchIdsUsed[i] == mId) {
+							mId++;
+							i = -1; // repeat - we're unordered!
+						}
 					}
+					INTERNAL_TouchIdsUsed.Add(mId);
+				} else {
+					if (INTERNAL_TouchIds.Count == 0) {
+						INTERNAL_TouchIdNext = (int) INTERNAL_CurrentTimestamp.TotalMilliseconds;
+					}
+					mId = INTERNAL_TouchIdNext++;
 				}
-				touchIdsUsed.Add(minId);
-				touchIds[id] = minId;
+				INTERNAL_TouchIds[id] = mId;
 			}
 
 			// Try to find the touch id.
 			int touchId;
-			if (!touchIds.TryGetValue(id, out touchId))
+			if (!INTERNAL_TouchIds.TryGetValue(id, out touchId))
 			{
 				/* If we got here that means either the device is sending
 				 * us bad, out of order, or old touch events.
@@ -334,8 +351,10 @@ namespace Microsoft.Xna.Framework.Input.Touch
 			// If this is a release unmap the hardware id.
 			if (state == TouchLocationState.Released)
 			{
-				touchIds.Remove(id);
-				touchIdsUsed.Remove(touchId);
+				INTERNAL_TouchIds.Remove(id);
+				if (!INTERNAL_TouchIdsXNA) {
+					INTERNAL_TouchIdsUsed.Remove(touchId);
+				}
 			}
 		}
 
