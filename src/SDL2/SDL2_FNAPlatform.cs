@@ -73,6 +73,34 @@ namespace Microsoft.Xna.Framework
 					"1"
 				);
 			}
+
+			// We want to initialize the controllers ASAP!
+			SDL.SDL_Event[] evt = new SDL.SDL_Event[1];
+			SDL.SDL_PumpEvents();
+			while (SDL.SDL_PeepEvents(
+				evt,
+				1,
+				SDL.SDL_eventaction.SDL_GETEVENT,
+				SDL.SDL_EventType.SDL_CONTROLLERDEVICEADDED,
+				SDL.SDL_EventType.SDL_CONTROLLERDEVICEADDED
+			) == 1) {
+				INTERNAL_AddInstance(evt[0].cdevice.which);
+			}
+			
+			
+			/* Sometimes Android hates us.
+			 * Sometimes it hates us horribly.
+			 * And sometimes THIS happens!
+			 *
+			 * Still unsure if SDL2 bug or not. At least it works this way.
+			 * -ade
+			 */
+			 if (OSVersion.Equals("Android")) {
+				 int numJoysticks = SDL.SDL_NumJoysticks();
+				 for (int i = 0; i < numJoysticks; i++) {
+					 INTERNAL_AddInstance(i);
+				 }
+			 }
 		}
 
 		public static void ProgramExit(object sender, EventArgs e)
@@ -451,37 +479,6 @@ namespace Microsoft.Xna.Framework
 
 			// We out.
 			game.Exit();
-		}
-
-		public static void BeforeInitialize()
-		{
-			// We want to initialize the controllers ASAP!
-			SDL.SDL_Event[] evt = new SDL.SDL_Event[1];
-			SDL.SDL_PumpEvents(); // Required to get OSX device events this early.
-			while (SDL.SDL_PeepEvents(
-				evt,
-				1,
-				SDL.SDL_eventaction.SDL_GETEVENT,
-				SDL.SDL_EventType.SDL_CONTROLLERDEVICEADDED,
-				SDL.SDL_EventType.SDL_CONTROLLERDEVICEADDED
-			) == 1) {
-				INTERNAL_AddInstance(evt[0].cdevice.which);
-			}
-			
-			/* Sometimes Android hates us.
-			 * Sometimes it hates us horribly.
-			 * And sometimes THIS happens!
-			 *
-			 * Still unsure if SDL2 bug or not. At least it works this way.
-			 * -ade
-			 */
-			 if (OSVersion.Equals("Android")) {
-				 int numJoysticks = SDL.SDL_NumJoysticks();
-				 for (int i = 0; i < numJoysticks; i++) {
-					 INTERNAL_AddInstance(i);
-				 }
-			 }
-			
 		}
 
 		public static IGLDevice CreateGLDevice(

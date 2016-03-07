@@ -825,7 +825,6 @@ namespace Microsoft.Xna.Framework
 				graphicsDeviceManager.CreateDevice();
 			}
 
-			FNAPlatform.BeforeInitialize();
 			Initialize();
 
 			/* We need to do this after virtual Initialize(...) is called.
