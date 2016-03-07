@@ -21,7 +21,6 @@ namespace Microsoft.Xna.Framework.Input.Touch
 	{
 		#region Public Static Properties
 
-		//TODO: maybe change INTERNAL_Window when WindowHandle changes. What does XNA do?
 		/// <summary>
 		/// The window handle of the touch panel.
 		/// </summary>
@@ -186,6 +185,7 @@ namespace Microsoft.Xna.Framework.Input.Touch
 		private static TouchLocation lastTap;
 
 		private static GestureType dragGestureStarted = GestureType.None;
+		private static int dragGestureId = -1;
 
 		#endregion
 
@@ -197,7 +197,8 @@ namespace Microsoft.Xna.Framework.Input.Touch
 		/// <returns><see cref="TouchPanelCapabilities"/></returns>
 		public static TouchPanelCapabilities GetCapabilities()
 		{
-			if (!FNAPlatform.IsOnTouchPlatform()) {
+			if (!FNAPlatform.IsOnTouchPlatform())
+			{
 				capabilitiesStub.InitializeStub();
 				return capabilitiesStub;
 			}
@@ -207,7 +208,8 @@ namespace Microsoft.Xna.Framework.Input.Touch
 
 		public static TouchCollection GetState()
 		{
-			if (!FNAPlatform.IsOnTouchPlatform()) {
+			if (!FNAPlatform.IsOnTouchPlatform())
+			{
 				return TouchCollection.Empty;
 			}
 			
@@ -244,7 +246,8 @@ namespace Microsoft.Xna.Framework.Input.Touch
 		/// <returns><see cref="GestureSample"/></returns>
 		public static GestureSample ReadGesture()
 		{
-			if (!FNAPlatform.IsOnTouchPlatform()) {
+			if (!FNAPlatform.IsOnTouchPlatform())
+			{
 				return default(GestureSample);
 			}
 			return GestureList.Dequeue();
@@ -289,21 +292,26 @@ namespace Microsoft.Xna.Framework.Input.Touch
 			{
 				if (Environment.GetEnvironmentVariable(
 					"FNA_TOUCH_FORCE_MAXIMUM"
-				) != "0" && INTERNAL_TouchIds.Count == FNAPlatform.GetMaximumTouchCount()) {
+				) != "0" && INTERNAL_TouchIds.Count == FNAPlatform.GetMaximumTouchCount())
+				{
 					return;
 				}
 				int mId;
-				if (!INTERNAL_TouchIdsXNA) {
+				if (!INTERNAL_TouchIdsXNA)
+				{
 					mId = 0;
-					for (int i = 0; i < INTERNAL_TouchIdsUsed.Count; i++) {
-						if (INTERNAL_TouchIdsUsed[i] == mId) {
+					for (int i = 0; i < INTERNAL_TouchIdsUsed.Count; i++)
+					{
+						if (INTERNAL_TouchIdsUsed[i] == mId)
+						{
 							mId++;
 							i = -1; // repeat - we're unordered!
 						}
 					}
 					INTERNAL_TouchIdsUsed.Add(mId);
 				} else {
-					if (INTERNAL_TouchIds.Count == 0) {
+					if (INTERNAL_TouchIds.Count == 0)
+					{
 						INTERNAL_TouchIdNext = (int) INTERNAL_CurrentTimestamp.TotalMilliseconds;
 					}
 					mId = INTERNAL_TouchIdNext++;
@@ -357,7 +365,8 @@ namespace Microsoft.Xna.Framework.Input.Touch
 			if (state == TouchLocationState.Released)
 			{
 				INTERNAL_TouchIds.Remove(id);
-				if (!INTERNAL_TouchIdsXNA) {
+				if (!INTERNAL_TouchIdsXNA)
+				{
 					INTERNAL_TouchIdsUsed.Remove(touchId);
 				}
 			}
@@ -372,44 +381,45 @@ namespace Microsoft.Xna.Framework.Input.Touch
 			int mostToRemove = Math.Max(touchState.Count, gestureState.Count);
 			if (mostToRemove > 0)
 			{
-				List<TouchLocation> temp = new List<TouchLocation>(mostToRemove);
-
 				// Submit a new event for each non-released location.
-				temp.AddRange(touchState);
-				foreach (TouchLocation touch in temp)
+				int skipped = 0;
+				while (touchState.Count > skipped)
 				{
-					if (touch.State != TouchLocationState.Released)
+					if (touchState[0].State == TouchLocationState.Released)
 					{
-						ApplyTouch(
-							touchState,
-							new TouchLocation(
-								touch.Id,
-								TouchLocationState.Released,
-								touch.Position,
-								touch.PressureEXT,
-								INTERNAL_CurrentTimestamp
-							)
-						);
+						skipped++;
+						continue;
 					}
+					ApplyTouch(
+						touchState,
+						new TouchLocation(
+							touchState[0].Id,
+							TouchLocationState.Released,
+							touchState[0].Position,
+							touchState[0].PressureEXT,
+							INTERNAL_CurrentTimestamp
+						)
+					);
 				}
-
-				temp.Clear();
-				temp.AddRange(gestureState);
-				foreach (TouchLocation touch in temp)
+				
+				skipped = 0;
+				while (gestureState.Count > 0)
 				{
-					if (touch.State != TouchLocationState.Released)
+					if (gestureState[0].State == TouchLocationState.Released)
 					{
-						ApplyTouch(
-							gestureState,
-							new TouchLocation(
-								touch.Id,
-								TouchLocationState.Released,
-								touch.Position,
-								touch.PressureEXT,
-								INTERNAL_CurrentTimestamp
-							)
-						);
+						skipped++;
+						continue;
 					}
+					ApplyTouch(
+						gestureState,
+						new TouchLocation(
+							gestureState[0].Id,
+							TouchLocationState.Released,
+							gestureState[0].Position,
+							gestureState[0].PressureEXT,
+							INTERNAL_CurrentTimestamp
+						)
+					);
 				}
 			}
 		}
@@ -489,12 +499,14 @@ namespace Microsoft.Xna.Framework.Input.Touch
 			 *  - Pinch occurs if 2 or more fingers are down and at least one is moving.
 			 *  - If you enter a Pinch during a drag a DragComplete is fired.
 			 *  - Drags are classified as horizontal, vertical, free, or none and stay that way.
+			 *  - Drags also only occur for only one finger - multitouch isn't supported.
 			 */
 
 			// First get a count of touch locations which are not in the released state.
 			int heldLocations = 0;
-			foreach (TouchLocation touch in gestureState)
+			for (int i = 0; i < gestureState.Count; i++)
 			{
+				TouchLocation touch = gestureState[i];
 				heldLocations += touch.State != TouchLocationState.Released ? 1 : 0;
 			}
 
@@ -509,8 +521,9 @@ namespace Microsoft.Xna.Framework.Input.Touch
 			}
 
 			// Process the touch locations for gestures.
-			foreach (TouchLocation touch in gestureState)
+			for (int i = 0; i < gestureState.Count; i++)
 			{
+				TouchLocation touch = gestureState[i];
 				switch (touch.State)
 				{
 				case TouchLocationState.Pressed:
@@ -636,7 +649,7 @@ namespace Microsoft.Xna.Framework.Input.Touch
 					}
 
 					// If a drag is active then we need to finalize it.
-					if (dragGestureStarted != GestureType.None)
+					if (dragGestureStarted != GestureType.None && dragGestureId == touch.Id)
 					{
 						if (GestureIsEnabled(GestureType.DragComplete))
 						{
@@ -653,6 +666,7 @@ namespace Microsoft.Xna.Framework.Input.Touch
 						}
 
 						dragGestureStarted = GestureType.None;
+						dragGestureId = -1;
 						break;
 					}
 
@@ -692,6 +706,7 @@ namespace Microsoft.Xna.Framework.Input.Touch
 				tapDisabled = false;
 				holdDisabled = false;
 				dragGestureStarted = GestureType.None;
+				dragGestureId = -1;
 			}
 		}
 
@@ -819,7 +834,12 @@ namespace Microsoft.Xna.Framework.Input.Touch
 			{
 				return;
 			}
-
+			
+			if (dragGestureId != -1 && dragGestureId != touch.Id)
+			{
+				return;
+			}
+			
 			/* Make sure this is a move event and that we have
 			 * a previous touch location.
 			 */
@@ -892,6 +912,8 @@ namespace Microsoft.Xna.Framework.Input.Touch
 					delta, Vector2.Zero
 				)
 			);
+			
+			dragGestureId = touch.Id;
 		}
 
 		private static void ProcessPinch(TouchLocation[] touches)
@@ -934,6 +956,7 @@ namespace Microsoft.Xna.Framework.Input.Touch
 				}
 
 				dragGestureStarted = GestureType.None;
+				dragGestureId = -1;
 			}
 
 			GestureList.Enqueue(

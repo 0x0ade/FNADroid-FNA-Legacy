@@ -342,15 +342,7 @@ namespace Microsoft.Xna.Framework.Input.Touch
 
 		public override string ToString()
 		{
-			return (
-				"Touch id:" + id.ToString() +
-				" state:" + state.ToString() +
-				" position:" + position.ToString() +
-				" pressure:" + pressure.ToString() +
-				" prevState:" + previousState.ToString() +
-				" prevPosition:" + previousPosition.ToString() +
-				" prevPressure:" + previousPressure.ToString()
-			);
+			return "{Position:" + position.ToString() + "}";
 		}
 
 		public override bool Equals(object obj)
