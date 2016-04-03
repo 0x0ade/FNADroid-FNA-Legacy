@@ -56,13 +56,11 @@ namespace Microsoft.Xna.Framework.Graphics.PackedVector
 
 		public Vector4 ToVector4()
 		{
-			const float maxVal = 0x7FFF;
-
 			return new Vector4(
-				((short) ((packedValue >> 0x00) & 0xFFFF)) / maxVal,
-				((short) ((packedValue >> 0x10) & 0xFFFF)) / maxVal,
-				((short) ((packedValue >> 0x20) & 0xFFFF)) / maxVal,
-				((short) ((packedValue >> 0x30) & 0xFFFF)) / maxVal
+				((short) (packedValue & 0xFFFF)) / 32767.0f,
+				((short) ((packedValue >> 16) & 0xFFFF)) / 32767.0f,
+				((short) ((packedValue >> 32) & 0xFFFF)) / 32767.0f,
+				((short) (packedValue >> 48)) / 32767.0f
 			);
 		}
 
@@ -113,16 +111,13 @@ namespace Microsoft.Xna.Framework.Graphics.PackedVector
 
 		#region Private Static Pack Method
 
-		private static ulong Pack(float vectorX, float vectorY, float vectorZ, float vectorW)
+		private static ulong Pack(float x, float y, float z, float w)
 		{
-			const float maxPos = 0x7FFF;
-			const float minNeg = -maxPos;
-
-			return (
-				(((ulong) MathHelper.Clamp((float) Math.Round(vectorX * maxPos), minNeg, maxPos) & 0xFFFF) << 0x00) |
-				(((ulong) MathHelper.Clamp((float) Math.Round(vectorY * maxPos), minNeg, maxPos) & 0xFFFF) << 0x10) |
-				(((ulong) MathHelper.Clamp((float) Math.Round(vectorZ * maxPos), minNeg, maxPos) & 0xFFFF) << 0x20) |
-				(((ulong) MathHelper.Clamp((float) Math.Round(vectorW * maxPos), minNeg, maxPos) & 0xFFFF) << 0x30)
+			return (ulong) (
+				((ulong) Math.Round(MathHelper.Clamp(x, -1, 1) * 32767.0f)) |
+				(((ulong) Math.Round(MathHelper.Clamp(y, -1, 1) * 32767.0f)) << 16) |
+				(((ulong) Math.Round(MathHelper.Clamp(z, -1, 1) * 32767.0f)) << 32) |
+				(((ulong) Math.Round(MathHelper.Clamp(w, -1, 1) * 32767.0f)) << 48)
 			);
 		}
 
