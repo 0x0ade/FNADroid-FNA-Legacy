@@ -94,7 +94,14 @@ namespace Microsoft.Xna.Framework
 				if (_isActive != value)
 				{
 					_isActive = value;
-					Raise(_isActive ? Activated : Deactivated, EventArgs.Empty);
+					if (_isActive)
+					{
+						OnActivated(this, EventArgs.Empty);
+					}
+					else
+					{
+						OnDeactivated(this, EventArgs.Empty);
+					}
 				}
 			}
 		}
@@ -572,6 +579,23 @@ namespace Microsoft.Xna.Framework
 					Draw(_gameTime);
 					EndDraw();
 				}
+			}
+		}
+
+		#endregion
+
+		#region Internal Methods
+
+		internal void RedrawWindow()
+		{
+			/* Draw/EndDraw should not be called if BeginDraw returns false.
+			 * http://stackoverflow.com/questions/4054936/manual-control-over-when-to-redraw-the-screen/4057180#4057180
+			 * http://stackoverflow.com/questions/4235439/xna-3-1-to-4-0-requires-constant-redraw-or-will-display-a-purple-screen
+			 */
+			if (BeginDraw())
+			{
+				Draw(new GameTime(_gameTime.TotalGameTime, TimeSpan.Zero));
+				EndDraw();
 			}
 		}
 

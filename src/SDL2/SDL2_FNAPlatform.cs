@@ -175,6 +175,19 @@ namespace Microsoft.Xna.Framework
 				game.Window.Handle
 			);
 
+			/* Windows has terrible event pumping and doesn't give us
+			 * WM_PAINT events correctly. So we get to do this!
+			 * -flibit
+			 */
+			if (OSVersion.Equals("Windows") && game.Window.AllowUserResizing)
+			{
+				quickDrawFunc = game.RedrawWindow;
+				SDL.SDL_SetEventFilter(
+					win32OnPaint,
+					Marshal.GetFunctionPointerForDelegate(quickDrawFunc)
+				);
+			}
+
 			// OSX has some fancy fullscreen features, let's use them!
 			bool osxUseSpaces;
 			if (OSVersion.Equals("Mac OS X"))
@@ -390,6 +403,10 @@ namespace Microsoft.Xna.Framework
 									evt.window.data2
 								);
 							}
+						}
+						else if (evt.window.windowEvent == SDL.SDL_WindowEventID.SDL_WINDOWEVENT_EXPOSED)
+						{
+							game.RedrawWindow();
 						}
 
 						// Window Move
@@ -1625,6 +1642,46 @@ namespace Microsoft.Xna.Framework
 #endif
 
 			return SurfaceFormat.Color; // FIXME: fallback?
+		}
+
+		#endregion
+
+		#region Private Static Win32 WM_PAINT Interop
+
+		private static SDL.SDL_EventFilter win32OnPaint = Win32OnPaint;
+		private delegate void QuickDrawFunc();
+		private static QuickDrawFunc quickDrawFunc;
+		[DllImport("user32.dll", CallingConvention = CallingConvention.StdCall)]
+		private static extern int InvalidateRect(IntPtr hwnd, IntPtr rect, int erase);
+		private static unsafe int Win32OnPaint(IntPtr func, IntPtr evtPtr)
+		{
+			SDL.SDL_Event* evt = (SDL.SDL_Event*) evtPtr;
+			if (evt->type == SDL.SDL_EventType.SDL_WINDOWEVENT)
+			{
+				if (evt->window.windowEvent == SDL.SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED)
+				{
+					SDL.SDL_SysWMinfo info = new SDL.SDL_SysWMinfo();
+					SDL.SDL_VERSION(out info.version);
+					SDL.SDL_GetWindowWMInfo(
+						SDL.SDL_GetWindowFromID(evt->window.windowID),
+						ref info
+					);
+					InvalidateRect(
+						info.info.win.window,
+						IntPtr.Zero,
+						0
+					);
+				}
+				if (evt->window.windowEvent == SDL.SDL_WindowEventID.SDL_WINDOWEVENT_EXPOSED)
+				{
+					Marshal.GetDelegateForFunctionPointer(
+						func,
+						typeof(QuickDrawFunc)
+					).DynamicInvoke(null);
+					return 0;
+				}
+			}
+			return 1;
 		}
 
 		#endregion
