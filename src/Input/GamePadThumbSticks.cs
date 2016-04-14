@@ -82,23 +82,19 @@ namespace Microsoft.Xna.Framework.Input
 
 		private void ApplyDeadZone(GamePadDeadZone dz)
 		{
-			// Based on the XInput constants
-			const float leftThumbDeadZone = 0.24f;
-			const float rightThumbDeadZone = 0.265f;
-
 			switch (dz)
 			{
 				case GamePadDeadZone.None:
 					break;
 				case GamePadDeadZone.IndependentAxes:
-					left.X = ExcludeAxisDeadZone(left.X, leftThumbDeadZone);
-					left.Y = ExcludeAxisDeadZone(left.Y, leftThumbDeadZone);
-					right.X = ExcludeAxisDeadZone(right.X, rightThumbDeadZone);
-					right.Y = ExcludeAxisDeadZone(right.Y, rightThumbDeadZone);
+					left.X = GamePad.ExcludeAxisDeadZone(left.X, GamePad.LeftDeadZone);
+					left.Y = GamePad.ExcludeAxisDeadZone(left.Y, GamePad.LeftDeadZone);
+					right.X = GamePad.ExcludeAxisDeadZone(right.X, GamePad.RightDeadZone);
+					right.Y = GamePad.ExcludeAxisDeadZone(right.Y, GamePad.RightDeadZone);
 					break;
 				case GamePadDeadZone.Circular:
-					left = ExcludeCircularDeadZone(left, leftThumbDeadZone);
-					right = ExcludeCircularDeadZone(right, rightThumbDeadZone);
+					left = ExcludeCircularDeadZone(left, GamePad.LeftDeadZone);
+					right = ExcludeCircularDeadZone(right, GamePad.RightDeadZone);
 					break;
 			}
 		}
@@ -126,23 +122,6 @@ namespace Microsoft.Xna.Framework.Input
 		#endregion
 
 		#region Private Static Methods
-
-		private static float ExcludeAxisDeadZone(float value, float deadZone)
-		{
-			if (value < -deadZone)
-			{
-				value += deadZone;
-			}
-			else if (value > deadZone)
-			{
-				value -= deadZone;
-			}
-			else
-			{
-				return 0.0f;
-			}
-			return value / (1.0f - deadZone);
-		}
 
 		private static Vector2 ExcludeCircularDeadZone(Vector2 value, float deadZone)
 		{

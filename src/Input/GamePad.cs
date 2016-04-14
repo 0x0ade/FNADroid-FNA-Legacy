@@ -15,6 +15,15 @@ namespace Microsoft.Xna.Framework.Input
 {
 	public static class GamePad
 	{
+		#region Internal Constants
+
+		/* Based on the XInput constants */
+		internal const float LeftDeadZone = 7849.0f / 32768.0f;
+		internal const float RightDeadZone = 8689.0f / 32768.0f;
+		internal const float TriggerThreshold = 30.0f / 255.0f;
+
+		#endregion
+
 		#region Internal Static Variables
 
 		/* Determines how many controllers we should be tracking.
@@ -89,6 +98,27 @@ namespace Microsoft.Xna.Framework.Input
 		public static void SetLightBarEXT(PlayerIndex playerIndex, Color color)
 		{
 			FNAPlatform.SetGamePadLightBar((int) playerIndex, color);
+		}
+
+		#endregion
+
+		#region Internal Static Methods
+
+		internal static float ExcludeAxisDeadZone(float value, float deadZone)
+		{
+			if (value < -deadZone)
+			{
+				value += deadZone;
+			}
+			else if (value > deadZone)
+			{
+				value -= deadZone;
+			}
+			else
+			{
+				return 0.0f;
+			}
+			return value / (1.0f - deadZone);
 		}
 
 		#endregion
