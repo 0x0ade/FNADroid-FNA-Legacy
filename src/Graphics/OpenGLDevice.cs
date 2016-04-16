@@ -696,10 +696,12 @@ namespace Microsoft.Xna.Framework.Graphics
 				out winWidth,
 				out winHeight
 			);
-			if (	winWidth != presentationParameters.BackBufferWidth ||
+			if ((	winWidth != presentationParameters.BackBufferWidth ||
 				winHeight != presentationParameters.BackBufferHeight ||
-				presentationParameters.MultiSampleCount > 0	)
+				presentationParameters.MultiSampleCount > 0
+				) && useES != 20 )
 			{
+				// TODO a basic ES2 faux-backbuffer implementation
 				if (!supportsFauxBackbuffer)
 				{
 					throw new NoSuitableGraphicsDeviceException(
@@ -717,6 +719,12 @@ namespace Microsoft.Xna.Framework.Graphics
 			}
 			else
 			{
+				if (useES == 20) {
+					// ES2 doesn't support framebuffer blitting... let's just continue on. -ade
+					presentationParameters.BackBufferWidth = winWidth;
+					presentationParameters.BackBufferHeight = winHeight;
+					presentationParameters.MultiSampleCount = 0;
+				}
 				Backbuffer = new NullBackbuffer(
 					presentationParameters.BackBufferWidth,
 					presentationParameters.BackBufferHeight
@@ -824,7 +832,13 @@ namespace Microsoft.Xna.Framework.Graphics
 			);
 			bool useFauxBackbuffer = (	winWidth != presentationParameters.BackBufferWidth ||
 							winHeight != presentationParameters.BackBufferHeight ||
-							presentationParameters.MultiSampleCount > 0	);
+							presentationParameters.MultiSampleCount > 0	) && useES != 20;
+			if (useES == 20) {
+				// ES2 doesn't support framebuffer blitting... let's just reset the params here anyways. -ade
+				presentationParameters.BackBufferWidth = winWidth;
+				presentationParameters.BackBufferHeight = winHeight;
+				presentationParameters.MultiSampleCount = 0;
+			}
 			if (useFauxBackbuffer)
 			{
 				if (Backbuffer is NullBackbuffer)
@@ -1364,7 +1378,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			if (blendState.ColorWriteChannels1 != colorWriteEnable1)
 			{
 				colorWriteEnable1 = blendState.ColorWriteChannels1;
-				glColorMaskIndexedEXT(
+				glColorMaskIndexed(
 					1,
 					(colorWriteEnable1 & ColorWriteChannels.Red) != 0,
 					(colorWriteEnable1 & ColorWriteChannels.Green) != 0,
@@ -1375,7 +1389,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			if (blendState.ColorWriteChannels2 != colorWriteEnable2)
 			{
 				colorWriteEnable2 = blendState.ColorWriteChannels2;
-				glColorMaskIndexedEXT(
+				glColorMaskIndexed(
 					2,
 					(colorWriteEnable2 & ColorWriteChannels.Red) != 0,
 					(colorWriteEnable2 & ColorWriteChannels.Green) != 0,
@@ -1386,7 +1400,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			if (blendState.ColorWriteChannels3 != colorWriteEnable3)
 			{
 				colorWriteEnable3 = blendState.ColorWriteChannels3;
-				glColorMaskIndexedEXT(
+				glColorMaskIndexed(
 					3,
 					(colorWriteEnable3 & ColorWriteChannels.Red) != 0,
 					(colorWriteEnable3 & ColorWriteChannels.Green) != 0,
@@ -1718,13 +1732,16 @@ namespace Microsoft.Xna.Framework.Graphics
 						XNAToGL.MinMipFilter[(int) tex.Filter] :
 						XNAToGL.MinFilter[(int) tex.Filter]
 				);
-				glTexParameterf(
-					tex.Target,
-					GLenum.GL_TEXTURE_MAX_ANISOTROPY_EXT,
-					(tex.Filter == TextureFilter.Anisotropic) ?
-						Math.Max(tex.Anistropy, 1.0f) :
-						1.0f
-				);
+				if (useES == 0) {
+					// ES doesn't seem to support anisotropy. -ade
+					glTexParameterf(
+						tex.Target,
+						GLenum.GL_TEXTURE_MAX_ANISOTROPY_EXT,
+						(tex.Filter == TextureFilter.Anisotropic) ?
+							Math.Max(tex.Anistropy, 1.0f) :
+							1.0f
+					);
+				}
 			}
 			if (sampler.MaxMipLevel != tex.MaxMipmapLevel)
 			{
@@ -1737,13 +1754,6 @@ namespace Microsoft.Xna.Framework.Graphics
 			}
 			if (sampler.MipMapLevelOfDetailBias != tex.LODBias)
 			{
-				/*
-				 * I'm unsure if ES3 supports TEXTURE_LOD_BIAS.
-				 * MAX_TEXTURE_LOD_BIAS appears in the specs, but
-				 * FNA disabled it completely for ES before.
-				 *
-				 * -ade
-				 */
 				System.Diagnostics.Debug.Assert(useES == 0 || 30 <= useES);
 				tex.LODBias = sampler.MipMapLevelOfDetailBias;
 				glTexParameterf(
@@ -2411,11 +2421,14 @@ namespace Microsoft.Xna.Framework.Graphics
 					XNAToGL.MinMipFilter[(int) result.Filter] :
 					XNAToGL.MinFilter[(int) result.Filter]
 			);
-			glTexParameterf(
-				result.Target,
-				GLenum.GL_TEXTURE_MAX_ANISOTROPY_EXT,
-				(result.Filter == TextureFilter.Anisotropic) ? Math.Max(result.Anistropy, 1.0f) : 1.0f
-			);
+			if (useES == 0) {
+				// ES doesn't seem to support anisotropy. -ade
+				glTexParameterf(
+					result.Target,
+					GLenum.GL_TEXTURE_MAX_ANISOTROPY_EXT,
+					(result.Filter == TextureFilter.Anisotropic) ? Math.Max(result.Anistropy, 1.0f) : 1.0f
+				);
+			}
 			glTexParameteri(
 				result.Target,
 				GLenum.GL_TEXTURE_BASE_LEVEL,
