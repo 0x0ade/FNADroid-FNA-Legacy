@@ -204,10 +204,14 @@ namespace Microsoft.Xna.Framework
 				);
 			}
 #if DEBUG
-			SDL.SDL_GL_SetAttribute(
-				SDL.SDL_GLattr.SDL_GL_CONTEXT_FLAGS,
-				(int) SDL.SDL_GLcontext.SDL_GL_CONTEXT_DEBUG_FLAG
-			);
+			if (useES == 0)
+			{
+				// "Could not create EGL context (context attributes are not supported)" -ade
+				SDL.SDL_GL_SetAttribute(
+					SDL.SDL_GLattr.SDL_GL_CONTEXT_FLAGS,
+					(int) SDL.SDL_GLcontext.SDL_GL_CONTEXT_DEBUG_FLAG
+				);
+			}
 #endif
 
 			string title = MonoGame.Utilities.AssemblyHelper.GetDefaultWindowTitle();
