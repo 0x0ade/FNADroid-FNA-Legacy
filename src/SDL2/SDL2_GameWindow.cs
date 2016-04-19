@@ -206,7 +206,9 @@ namespace Microsoft.Xna.Framework
 #if DEBUG
 			if (useES == 0)
 			{
-				// "Could not create EGL context (context attributes are not supported)" -ade
+				// TODO: Check for availability on ES contexts. Otherwise...
+				// With ES2, "Could not create EGL context (context attributes are not supported)"
+				// With ES3, without KHR_debug, "Adreno-EGL: <qeglDrvAPI_eglCreateContext:2425>: EGL_BAD_ATTRIBUTE"
 				SDL.SDL_GL_SetAttribute(
 					SDL.SDL_GLattr.SDL_GL_CONTEXT_FLAGS,
 					(int) SDL.SDL_GLcontext.SDL_GL_CONTEXT_DEBUG_FLAG
