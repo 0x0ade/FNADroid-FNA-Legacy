@@ -32,19 +32,33 @@ namespace Microsoft.Xna.Framework.Graphics
 		private const int MAX_INDICES = MAX_SPRITES * 6;
 
 		// Used to quickly flip text for DrawString
-		private static readonly Vector2[] axisDirection = new Vector2[]
+		private static readonly float[] axisDirectionX = new float[]
 		{
-			new Vector2(-1, -1),
-			new Vector2( 1, -1),
-			new Vector2(-1,  1),
-			new Vector2( 1,  1)
+			-1.0f,
+			1.0f,
+			-1.0f,
+			1.0f
 		};
-		private static readonly Vector2[] axisIsMirrored = new Vector2[]
+		private static readonly float[] axisDirectionY = new float[]
 		{
-			new Vector2(0, 0),
-			new Vector2(1, 0),
-			new Vector2(0, 1),
-			new Vector2(1, 1)
+			-1.0f,
+			-1.0f,
+			1.0f,
+			1.0f
+		};
+		private static readonly float[] axisIsMirroredX = new float[]
+		{
+			0.0f,
+			1.0f,
+			0.0f,
+			1.0f
+		};
+		private static readonly float[] axisIsMirroredY = new float[]
+		{
+			0.0f,
+			0.0f,
+			1.0f,
+			1.0f
 		};
 
 		// Used to calculate texture coordinates
@@ -306,12 +320,10 @@ namespace Microsoft.Xna.Framework.Graphics
 			PushSprite(
 				texture,
 				null,
-				new Vector4(
-					position.X,
-					position.Y,
-					1.0f,
-					1.0f
-				),
+				position.X,
+				position.Y,
+				1.0f,
+				1.0f,
 				color,
 				Vector2.Zero,
 				0.0f,
@@ -331,12 +343,10 @@ namespace Microsoft.Xna.Framework.Graphics
 			PushSprite(
 				texture,
 				sourceRectangle,
-				new Vector4(
-					position.X,
-					position.Y,
-					1.0f,
-					1.0f
-				),
+				position.X,
+				position.Y,
+				1.0f,
+				1.0f,
 				color,
 				Vector2.Zero,
 				0.0f,
@@ -361,17 +371,15 @@ namespace Microsoft.Xna.Framework.Graphics
 			PushSprite(
 				texture,
 				sourceRectangle,
-				new Vector4(
-					position.X,
-					position.Y,
-					scale,
-					scale
-				),
+				position.X,
+				position.Y,
+				scale,
+				scale,
 				color,
 				origin,
 				rotation,
 				layerDepth,
-				(byte) effects,
+				(byte) (effects & (SpriteEffects) 0x03),
 				false
 			);
 		}
@@ -391,17 +399,15 @@ namespace Microsoft.Xna.Framework.Graphics
 			PushSprite(
 				texture,
 				sourceRectangle,
-				new Vector4(
-					position.X,
-					position.Y,
-					scale.X,
-					scale.Y
-				),
+				position.X,
+				position.Y,
+				scale.X,
+				scale.Y,
 				color,
 				origin,
 				rotation,
 				layerDepth,
-				(byte) effects,
+				(byte) (effects & (SpriteEffects) 0x03),
 				false
 			);
 		}
@@ -415,12 +421,10 @@ namespace Microsoft.Xna.Framework.Graphics
 			PushSprite(
 				texture,
 				null,
-				new Vector4(
-					destinationRectangle.X,
-					destinationRectangle.Y,
-					destinationRectangle.Width,
-					destinationRectangle.Height
-				),
+				destinationRectangle.X,
+				destinationRectangle.Y,
+				destinationRectangle.Width,
+				destinationRectangle.Height,
 				color,
 				Vector2.Zero,
 				0.0f,
@@ -440,12 +444,10 @@ namespace Microsoft.Xna.Framework.Graphics
 			PushSprite(
 				texture,
 				sourceRectangle,
-				new Vector4(
-					destinationRectangle.X,
-					destinationRectangle.Y,
-					destinationRectangle.Width,
-					destinationRectangle.Height
-				),
+				destinationRectangle.X,
+				destinationRectangle.Y,
+				destinationRectangle.Width,
+				destinationRectangle.Height,
 				color,
 				Vector2.Zero,
 				0.0f,
@@ -469,17 +471,15 @@ namespace Microsoft.Xna.Framework.Graphics
 			PushSprite(
 				texture,
 				sourceRectangle,
-				new Vector4(
-					destinationRectangle.X,
-					destinationRectangle.Y,
-					destinationRectangle.Width,
-					destinationRectangle.Height
-				),
+				destinationRectangle.X,
+				destinationRectangle.Y,
+				destinationRectangle.Width,
+				destinationRectangle.Height,
 				color,
 				origin,
 				rotation,
 				layerDepth,
-				(byte) effects,
+				(byte) (effects & (SpriteEffects) 0x03),
 				true
 			);
 		}
@@ -505,7 +505,7 @@ namespace Microsoft.Xna.Framework.Graphics
 				color,
 				0.0f,
 				Vector2.Zero,
-				new Vector2(1.0f),
+				Vector2.One,
 				SpriteEffects.None,
 				0.0f
 			);
@@ -564,6 +564,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			{
 				return;
 			}
+			effects &= (SpriteEffects) 0x03;
 
 			// FIXME: This needs an accuracy check! -flibit
 
@@ -571,7 +572,9 @@ namespace Microsoft.Xna.Framework.Graphics
 			Vector2 baseOffset = origin;
 			if (effects != SpriteEffects.None)
 			{
-				baseOffset -= spriteFont.MeasureString(text) * axisIsMirrored[(int) effects];
+				Vector2 size = spriteFont.MeasureString(text);
+				baseOffset.X -= size.X * axisIsMirroredX[(int) effects];
+				baseOffset.Y -= size.Y * axisIsMirroredY[(int) effects];
 			}
 
 			Vector2 curOffset = Vector2.Zero;
@@ -628,26 +631,22 @@ namespace Microsoft.Xna.Framework.Graphics
 
 				// Calculate the character origin
 				Vector2 offset = baseOffset;
-				offset.X += (curOffset.X + spriteFont.croppingData[index].X) * axisDirection[(int) effects].X;
-				offset.Y += (curOffset.Y + spriteFont.croppingData[index].Y) * axisDirection[(int) effects].Y;
+				offset.X += (curOffset.X + spriteFont.croppingData[index].X) * axisDirectionX[(int) effects];
+				offset.Y += (curOffset.Y + spriteFont.croppingData[index].Y) * axisDirectionY[(int) effects];
 				if (effects != SpriteEffects.None)
 				{
-					offset += new Vector2(
-						spriteFont.glyphData[index].Width,
-						spriteFont.glyphData[index].Height
-					) * axisIsMirrored[(int) effects];
+					offset.X += spriteFont.glyphData[index].Width * axisIsMirroredX[(int) effects];
+					offset.Y += spriteFont.glyphData[index].Height * axisIsMirroredY[(int) effects];
 				}
 
 				// Draw!
 				PushSprite(
 					spriteFont.textureValue,
 					spriteFont.glyphData[index],
-					new Vector4(
-						position.X,
-						position.Y,
-						scale.X,
-						scale.Y
-					),
+					position.X,
+					position.Y,
+					scale.X,
+					scale.Y,
 					color,
 					offset,
 					rotation,
@@ -676,7 +675,7 @@ namespace Microsoft.Xna.Framework.Graphics
 				color,
 				0.0f,
 				Vector2.Zero,
-				new Vector2(1.0f),
+				Vector2.One,
 				SpriteEffects.None,
 				0.0f
 			);
@@ -730,6 +729,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			{
 				return;
 			}
+			effects &= (SpriteEffects) 0x03;
 
 			// FIXME: This needs an accuracy check! -flibit
 
@@ -737,7 +737,9 @@ namespace Microsoft.Xna.Framework.Graphics
 			Vector2 baseOffset = origin;
 			if (effects != SpriteEffects.None)
 			{
-				baseOffset -= spriteFont.MeasureString(text) * axisIsMirrored[(int) effects];
+				Vector2 size = spriteFont.MeasureString(text);
+				baseOffset.X -= size.X * axisIsMirroredX[(int) effects];
+				baseOffset.Y -= size.Y * axisIsMirroredY[(int) effects];
 			}
 
 			Vector2 curOffset = Vector2.Zero;
@@ -792,26 +794,22 @@ namespace Microsoft.Xna.Framework.Graphics
 
 				// Calculate the character origin
 				Vector2 offset = baseOffset;
-				offset.X += (curOffset.X + spriteFont.croppingData[index].X) * axisDirection[(int) effects].X;
-				offset.Y += (curOffset.Y + spriteFont.croppingData[index].Y) * axisDirection[(int) effects].Y;
+				offset.X += (curOffset.X + spriteFont.croppingData[index].X) * axisDirectionX[(int) effects];
+				offset.Y += (curOffset.Y + spriteFont.croppingData[index].Y) * axisDirectionY[(int) effects];
 				if (effects != SpriteEffects.None)
 				{
-					offset += new Vector2(
-						spriteFont.glyphData[index].Width,
-						spriteFont.glyphData[index].Height
-					) * axisIsMirrored[(int) effects];
+					offset.X += spriteFont.glyphData[index].Width * axisIsMirroredX[(int) effects];
+					offset.Y += spriteFont.glyphData[index].Height * axisIsMirroredY[(int) effects];
 				}
 
 				// Draw!
 				PushSprite(
 					spriteFont.textureValue,
 					spriteFont.glyphData[index],
-					new Vector4(
-						position.X,
-						position.Y,
-						scale.X,
-						scale.Y
-					),
+					position.X,
+					position.Y,
+					scale.X,
+					scale.Y,
 					color,
 					offset,
 					rotation,
@@ -834,7 +832,10 @@ namespace Microsoft.Xna.Framework.Graphics
 		private void PushSprite(
 			Texture2D texture,
 			Rectangle? sourceRectangle,
-			Vector4 destination,
+			float destinationX,
+			float destinationY,
+			float destinationW,
+			float destinationH,
 			Color color,
 			Vector2 origin,
 			float rotation,
@@ -850,8 +851,6 @@ namespace Microsoft.Xna.Framework.Graphics
 
 			// Source/Destination/Origin Calculations
 			float sourceX, sourceY, sourceW, sourceH;
-			float destW = destination.Z;
-			float destH = destination.W;
 			float originX, originY;
 			if (sourceRectangle.HasValue)
 			{
@@ -874,8 +873,8 @@ namespace Microsoft.Xna.Framework.Graphics
 
 				if (!destSizeInPixels)
 				{
-					destW *= sourceRectangle.Value.Width;
-					destH *= sourceRectangle.Value.Height;
+					destinationW *= sourceRectangle.Value.Width;
+					destinationH *= sourceRectangle.Value.Height;
 				}
 			}
 			else
@@ -890,8 +889,8 @@ namespace Microsoft.Xna.Framework.Graphics
 
 				if (!destSizeInPixels)
 				{
-					destW *= texture.Width;
-					destH *= texture.Height;
+					destinationW *= texture.Width;
+					destinationH *= texture.Height;
 				}
 			}
 
@@ -918,53 +917,53 @@ namespace Microsoft.Xna.Framework.Graphics
 			}
 
 			// Calculate vertices, finally.
-			float cornerX = (CornerOffsetX[0] - originX) * destW;
-			float cornerY = (CornerOffsetY[0] - originY) * destH;
+			float cornerX = (CornerOffsetX[0] - originX) * destinationW;
+			float cornerY = (CornerOffsetY[0] - originY) * destinationH;
 			vertexInfo[numSprites].Position0.X = (
 				(rotationMatrix2X * cornerY) +
 				(rotationMatrix1X * cornerX) +
-				destination.X
+				destinationX
 			);
 			vertexInfo[numSprites].Position0.Y = (
 				(rotationMatrix2Y * cornerY) +
 				(rotationMatrix1Y * cornerX) +
-				destination.Y
+				destinationY
 			);
-			cornerX = (CornerOffsetX[1] - originX) * destW;
-			cornerY = (CornerOffsetY[1] - originY) * destH;
+			cornerX = (CornerOffsetX[1] - originX) * destinationW;
+			cornerY = (CornerOffsetY[1] - originY) * destinationH;
 			vertexInfo[numSprites].Position1.X = (
 				(rotationMatrix2X * cornerY) +
 				(rotationMatrix1X * cornerX) +
-				destination.X
+				destinationX
 			);
 			vertexInfo[numSprites].Position1.Y = (
 				(rotationMatrix2Y * cornerY) +
 				(rotationMatrix1Y * cornerX) +
-				destination.Y
+				destinationY
 			);
-			cornerX = (CornerOffsetX[2] - originX) * destW;
-			cornerY = (CornerOffsetY[2] - originY) * destH;
+			cornerX = (CornerOffsetX[2] - originX) * destinationW;
+			cornerY = (CornerOffsetY[2] - originY) * destinationH;
 			vertexInfo[numSprites].Position2.X = (
 				(rotationMatrix2X * cornerY) +
 				(rotationMatrix1X * cornerX) +
-				destination.X
+				destinationX
 			);
 			vertexInfo[numSprites].Position2.Y = (
 				(rotationMatrix2Y * cornerY) +
 				(rotationMatrix1Y * cornerX) +
-				destination.Y
+				destinationY
 			);
-			cornerX = (CornerOffsetX[3] - originX) * destW;
-			cornerY = (CornerOffsetY[3] - originY) * destH;
+			cornerX = (CornerOffsetX[3] - originX) * destinationW;
+			cornerY = (CornerOffsetY[3] - originY) * destinationH;
 			vertexInfo[numSprites].Position3.X = (
 				(rotationMatrix2X * cornerY) +
 				(rotationMatrix1X * cornerX) +
-				destination.X
+				destinationX
 			);
 			vertexInfo[numSprites].Position3.Y = (
 				(rotationMatrix2Y * cornerY) +
 				(rotationMatrix1Y * cornerX) +
-				destination.Y
+				destinationY
 			);
 			vertexInfo[numSprites].TextureCoordinate0.X = (CornerOffsetX[0 ^ effects] * sourceW) + sourceX;
 			vertexInfo[numSprites].TextureCoordinate0.Y = (CornerOffsetY[0 ^ effects] * sourceH) + sourceY;
@@ -1057,7 +1056,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			);
 
 			curTexture = textureInfo[0];
-			for (int i = 0; i < numSprites; i += 1)
+			for (int i = 1; i < numSprites; i += 1)
 			{
 				if (textureInfo[i] != curTexture)
 				{
@@ -1089,22 +1088,22 @@ namespace Microsoft.Xna.Framework.Graphics
 			unsafe
 			{
 				float* dstPtr = (float*) spriteMatrixTransform;
-				dstPtr[0] = tfWidth * transformMatrix.M11;
-				dstPtr[1] = tfHeight * transformMatrix.M21;
-				dstPtr[2] = transformMatrix.M31;
-				dstPtr[3] = -transformMatrix.M11 + transformMatrix.M21 + transformMatrix.M41;
-				dstPtr[4] = tfWidth * transformMatrix.M12;
-				dstPtr[5] = tfHeight * transformMatrix.M22;
-				dstPtr[6] = transformMatrix.M32;
-				dstPtr[7] = -transformMatrix.M12 + transformMatrix.M22 + transformMatrix.M42;
-				dstPtr[8] = tfWidth * transformMatrix.M13;
-				dstPtr[9] = tfHeight * transformMatrix.M23;
+				dstPtr[0] = (tfWidth * transformMatrix.M11) - transformMatrix.M14;
+				dstPtr[1] = (tfWidth * transformMatrix.M21) - transformMatrix.M24;
+				dstPtr[2] = (tfWidth * transformMatrix.M31) - transformMatrix.M34;
+				dstPtr[3] = (tfWidth * transformMatrix.M41) - transformMatrix.M44;
+				dstPtr[4] = (tfHeight * transformMatrix.M12) + transformMatrix.M14;
+				dstPtr[5] = (tfHeight * transformMatrix.M22) + transformMatrix.M24;
+				dstPtr[6] = (tfHeight * transformMatrix.M32) + transformMatrix.M34;
+				dstPtr[7] = (tfHeight * transformMatrix.M42) + transformMatrix.M44;
+				dstPtr[8] = transformMatrix.M13;
+				dstPtr[9] = transformMatrix.M23;
 				dstPtr[10] = transformMatrix.M33;
-				dstPtr[11] = -transformMatrix.M13 + transformMatrix.M23 + transformMatrix.M43;
-				dstPtr[12] = tfWidth * transformMatrix.M14;
-				dstPtr[13] = tfHeight * transformMatrix.M24;
+				dstPtr[11] = transformMatrix.M43;
+				dstPtr[12] = transformMatrix.M14;
+				dstPtr[13] = transformMatrix.M24;
 				dstPtr[14] = transformMatrix.M34;
-				dstPtr[15] = -transformMatrix.M14 + transformMatrix.M24 + transformMatrix.M44;
+				dstPtr[15] = transformMatrix.M44;
 			}
 
 			// FIXME: When is this actually applied? -flibit

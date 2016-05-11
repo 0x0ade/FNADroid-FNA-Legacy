@@ -38,7 +38,6 @@ using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input.Touch;
 #endregion
 
 namespace Microsoft.Xna.Framework
@@ -292,7 +291,7 @@ namespace Microsoft.Xna.Framework
 
 			Window = FNAPlatform.CreateWindow();
 
-			AudioDevice.Initialize();
+			FrameworkDispatcher.Update();
 
 			// Ready to run the loop!
 			RunApplication = true;
@@ -316,7 +315,10 @@ namespace Microsoft.Xna.Framework
 		{
 			Dispose(true);
 			GC.SuppressFinalize(this);
-			Raise(Disposed, EventArgs.Empty);
+			if (Disposed != null)
+			{
+				Disposed(this, EventArgs.Empty);
+			}
 		}
 
 		protected virtual void Dispose(bool disposing)
@@ -349,8 +351,6 @@ namespace Microsoft.Xna.Framework
 						(_graphicsDeviceService as IDisposable).Dispose();
 						_graphicsDeviceService = null;
 					}
-
-					AudioDevice.Dispose();
 
 					if (Window != null)
 					{
@@ -516,7 +516,8 @@ namespace Microsoft.Xna.Framework
 					_accumulatedElapsedTime -= TargetElapsedTime;
 					stepCount += 1;
 
-					DoUpdate(_gameTime);
+					AssertNotDisposed();
+					Update(_gameTime);
 				}
 
 				// Every update after the first accumulates lag
@@ -560,7 +561,8 @@ namespace Microsoft.Xna.Framework
 				_gameTime.TotalGameTime += _accumulatedElapsedTime;
 				_accumulatedElapsedTime = TimeSpan.Zero;
 
-				DoUpdate(_gameTime);
+				AssertNotDisposed();
+				Update(_gameTime);
 			}
 
 			// Draw unless the update suppressed it.
@@ -767,24 +769,42 @@ namespace Microsoft.Xna.Framework
 
 		protected virtual void Update(GameTime gameTime)
 		{
+#if BASIC_PROFILER
+			updateStart = _gameTimer.ElapsedTicks;
+#endif
+			//FrameworkDispatcher.Update should be time-less, yet touch input needs time. 
+			FrameworkDispatcher.GameTime = gameTime;
+			FrameworkDispatcher.Update();
 			_updateables.ForEachFilteredItem(UpdateAction, gameTime);
+#if BASIC_PROFILER
+			updateTime = _gameTimer.ElapsedTicks - updateStart;
+#endif
 		}
 
 		protected virtual void OnExiting(object sender, EventArgs args)
 		{
-			Raise(Exiting, args);
+			if (Exiting != null)
+			{
+				Exiting(this, args);
+			}
 		}
 
 		protected virtual void OnActivated(object sender, EventArgs args)
 		{
 			AssertNotDisposed();
-			Raise(Activated, args);
+			if (Activated != null)
+			{
+				Activated(this, args);
+			}
 		}
 
 		protected virtual void OnDeactivated(object sender, EventArgs args)
 		{
 			AssertNotDisposed();
-			Raise(Deactivated, args);
+			if (Deactivated != null)
+			{
+				Deactivated(this, args);
+			}
 		}
 
 		protected virtual bool ShowMissingRequirementMessage(Exception exception)
@@ -816,29 +836,6 @@ namespace Microsoft.Xna.Framework
 
 		#region Private Methods
 
-		/* FIXME: We should work toward eliminating internal methods. They
-		 * could eliminate the possibility that additional platforms could
-		 * be added by third parties without changing FNA itself.
-		 */
-
-		private void DoUpdate(GameTime gameTime)
-		{
-			AssertNotDisposed();
-#if BASIC_PROFILER
-			updateStart = _gameTimer.ElapsedTicks;
-#endif
-			AudioDevice.Update();
-
-			Update(gameTime);
-			/* The TouchPanel needs to know the time for when
-			* touches arrive.
-			*/
-			TouchPanel.INTERNAL_CurrentTimestamp = gameTime.TotalGameTime;
-#if BASIC_PROFILER
-			updateTime = _gameTimer.ElapsedTicks - updateStart;
-#endif
-		}
-
 		private void DoInitialize()
 		{
 			AssertNotDisposed();
@@ -860,72 +857,28 @@ namespace Microsoft.Xna.Framework
 			 * lists synced and to Initialize future components as they are
 			 * added.
 			 */
-			CategorizeComponents();
-			_components.ComponentAdded += Components_ComponentAdded;
-			_components.ComponentRemoved += Components_ComponentRemoved;
-		}
-
-		private void CategorizeComponents()
-		{
-			DecategorizeComponents();
+			_updateables.Clear();
+			_drawables.Clear();
 			for (int i = 0; i < Components.Count; i += 1)
 			{
 				CategorizeComponent(Components[i]);
 			}
-		}
-
-		/* FIXME: I am open to a better name for this method.
-		 * It does the opposite of CategorizeComponents.
-		 */
-		private void DecategorizeComponents()
-		{
-			_updateables.Clear();
-			_drawables.Clear();
+			_components.ComponentAdded += Components_ComponentAdded;
+			_components.ComponentRemoved += Components_ComponentRemoved;
 		}
 
 		private void CategorizeComponent(IGameComponent component)
 		{
 			IUpdateable updateable = component as IUpdateable;
-
 			if (updateable != null)
 			{
 				_updateables.Add(updateable);
 			}
 
 			IDrawable drawable = component as IDrawable;
-
 			if (drawable != null)
 			{
 				_drawables.Add(drawable);
-			}
-		}
-
-		/* FIXME: I am open to a better name for this method.
-		 * It does the opposite of CategorizeComponent.
-		 */
-		private void DecategorizeComponent(IGameComponent component)
-		{
-			IUpdateable updateable = component as IUpdateable;
-
-			if (updateable != null)
-			{
-				_updateables.Remove(updateable);
-			}
-
-			IDrawable drawable = component as IDrawable;
-
-			if (drawable != null)
-			{
-				_drawables.Remove(drawable);
-			}
-		}
-
-		private void Raise<TEventArgs>(EventHandler<TEventArgs> handler, TEventArgs e)
-			where TEventArgs : EventArgs
-		{
-			if (handler != null)
-			{
-				handler(this, e);
 			}
 		}
 
@@ -948,7 +901,17 @@ namespace Microsoft.Xna.Framework
 			object sender,
 			GameComponentCollectionEventArgs e
 		) {
-			DecategorizeComponent(e.GameComponent);
+			IUpdateable updateable = e.GameComponent as IUpdateable;
+			if (updateable != null)
+			{
+				_updateables.Remove(updateable);
+			}
+
+			IDrawable drawable = e.GameComponent as IDrawable;
+			if (drawable != null)
+			{
+				_drawables.Remove(drawable);
+			}
 		}
 
 		private void OnUnhandledException(
@@ -1276,14 +1239,23 @@ namespace Microsoft.Xna.Framework
 
 		#region FNA Extensions
 
+		/* We have to store this here because we may be
+		 * setting the log before static initialization.
+		 * Sometimes stuff is logged at that time, so we
+		 * have to force it to use what we're sent!
+		 * -flibit
+		 */
+		internal static Action<string> logStore;
 		public static void LogHookEXT(Action<string> logFunc)
 		{
 			if (logFunc == null)
 			{
+				logStore = null;
 				FNAPlatform.UnhookLogger();
 			}
 			else
 			{
+				logStore = logFunc;
 				FNAPlatform.Log = logFunc;
 			}
 		}
